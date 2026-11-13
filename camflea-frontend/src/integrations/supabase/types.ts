@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      marketplace_account_status: {
+        Row: {
+          changed_by: string | null
+          created_at: string
+          reason: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          changed_by?: string | null
+          created_at?: string
+          reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          changed_by?: string | null
+          created_at?: string
+          reason?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      marketplace_audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          created_at: string
+          id: string
+          metadata_summary: Json
+          reason: string | null
+          target_id: string | null
+          target_type: string
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata_summary?: Json
+          reason?: string | null
+          target_id?: string | null
+          target_type: string
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          created_at?: string
+          id?: string
+          metadata_summary?: Json
+          reason?: string | null
+          target_id?: string | null
+          target_type?: string
+        }
+        Relationships: []
+      }
       marketplace_feedback: {
         Row: {
           created_at: string
@@ -94,6 +154,50 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      marketplace_listing_media: {
+        Row: {
+          byte_size: number
+          created_at: string
+          id: string
+          listing_id: string
+          mime_type: string
+          ordering: number
+          storage_path: string
+          updated_at: string
+          upload_status: string
+        }
+        Insert: {
+          byte_size: number
+          created_at?: string
+          id?: string
+          listing_id: string
+          mime_type: string
+          ordering: number
+          storage_path: string
+          updated_at?: string
+          upload_status?: string
+        }
+        Update: {
+          byte_size?: number
+          created_at?: string
+          id?: string
+          listing_id?: string
+          mime_type?: string
+          ordering?: number
+          storage_path?: string
+          updated_at?: string
+          upload_status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "marketplace_listing_media_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "marketplace_listings"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       marketplace_messages: {
         Row: {
@@ -234,6 +338,11 @@ export type Database = {
           created_at: string
           id: string
           listing_id: string
+          listing_title_snapshot: string | null
+          price_max_snapshot: number | null
+          price_min_snapshot: number | null
+          price_snapshot: number | null
+          price_type_snapshot: string | null
           seller_id: string
           status: string
           updated_at: string
@@ -244,6 +353,11 @@ export type Database = {
           created_at?: string
           id?: string
           listing_id: string
+          listing_title_snapshot?: string | null
+          price_max_snapshot?: number | null
+          price_min_snapshot?: number | null
+          price_snapshot?: number | null
+          price_type_snapshot?: string | null
           seller_id: string
           status?: string
           updated_at?: string
@@ -254,6 +368,11 @@ export type Database = {
           created_at?: string
           id?: string
           listing_id?: string
+          listing_title_snapshot?: string | null
+          price_max_snapshot?: number | null
+          price_min_snapshot?: number | null
+          price_snapshot?: number | null
+          price_type_snapshot?: string | null
           seller_id?: string
           status?: string
           updated_at?: string
@@ -348,6 +467,27 @@ export type Database = {
       marketplace_transition_transaction: {
         Args: { _action: string; _reason?: string; _transaction_id: string }
         Returns: undefined
+      }
+      marketplace_mark_all_notifications_read: {
+        Args: Record<PropertyKey, never>
+        Returns: number
+      }
+      marketplace_mark_notification_read: {
+        Args: { _notification_id: string }
+        Returns: undefined
+      }
+      marketplace_mark_thread_read: {
+        Args: { _listing_id?: string; _sender_id: string }
+        Returns: number
+      }
+      marketplace_send_message: {
+        Args: {
+          _attachments?: string[]
+          _body: string
+          _listing_id?: string
+          _recipient_id: string
+        }
+        Returns: string
       }
     }
     Enums: {
