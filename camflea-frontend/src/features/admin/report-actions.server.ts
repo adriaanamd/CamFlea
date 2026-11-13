@@ -1,24 +1,22 @@
-import { createServerFn } from "@tanstack/react-start";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { z } from "zod";
 
-import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import type { Database } from "@/integrations/supabase/types";
 import { canAccessReportQueue } from "@/features/admin/report-access";
-
-export const reportQueuePageSize = 25;
+import { reportQueuePageSize, type ReportQueueFilters } from "@/features/admin/report-actions";
 const reportQueueProjection =
   "id, reason, details, status, created_at, listing_id, reported_user_id";
 
-export type ReportQueueFilters = {
-  status: "all" | "open" | "reviewed";
-  page: number;
-};
-
 async function assertStaffAccess(client: SupabaseClient<Database>, userId: string) {
-  const { data, error } = await client.rpc("has_role", { _user_id: userId, _role: "admin" });
-  if (error) throw new Error("Unable to verify staff access.");
-  if (!canAccessReportQueue(data ? ["admin"] : [])) throw new Error("Staff access required.");
+  const roles = await Promise.all(
+    (["admin", "moderator"] as const).map(async (role) => {
+      const { data, error } = await client.rpc("has_role", { _user_id: userId, _role: role });
+      if (error) throw new Error("Unable to verify staff access.");
+      return data ? role : null;
+    }),
+  );
+  if (!canAccessReportQueue(roles.filter((role): role is "admin" | "moderator" => role !== null))) {
+    throw new Error("Staff access required.");
+  }
 }
 
 export async function listReportsForStaff(
@@ -45,29 +43,11 @@ export async function reviewReportForStaff(
   reportId: string,
 ) {
   await assertStaffAccess(client, userId);
-  const { data, error } = await client
-    .from("marketplace_reports")
-    .update({ status: "reviewed" })
-    .eq("id", reportId)
-    .eq("status", "open")
-    .select("id")
-    .maybeSingle();
+  const { error } = await client.rpc("marketplace_review_report", {
+    _report_id: reportId,
+    _status: "reviewed",
+  });
   if (error) throw new Error("Unable to mark report as reviewed.");
-  if (!data) throw new Error("Report is no longer open.");
-  return data;
+  return { id: reportId };
 }
 
-export const loadAdminReports = createServerFn({ method: "GET" })
-  .middleware([requireSupabaseAuth])
-  .validator(
-    z.object({
-      status: z.enum(["all", "open", "reviewed"]),
-      page: z.number().int().min(0).max(100),
-    }),
-  )
-  .handler(({ data, context }) => listReportsForStaff(context.supabase, context.userId, data));
-
-export const reviewAdminReport = createServerFn({ method: "POST" })
-  .middleware([requireSupabaseAuth])
-  .validator(z.object({ id: z.string().uuid() }))
-  .handler(({ data, context }) => reviewReportForStaff(context.supabase, context.userId, data.id));

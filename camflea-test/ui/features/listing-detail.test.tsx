@@ -32,4 +32,33 @@ describe("ListingDetail", () => {
     expect(screen.getByText(/Library/)).toBeInTheDocument();
     expect(screen.getByText(/sold/i)).toBeInTheDocument();
   });
+
+  it("uses the resolved photo URL for the selected image and thumbnails", async () => {
+    render(
+      <ListingDetail
+        listing={{
+          id: "1",
+          title: "Calculator",
+          description: "Works well",
+          category: "Books & School Supplies",
+          condition: "Good",
+          meeting_place: "Library",
+          photos: ["https://cdn.example.test/calculator.png"],
+          price_type: "single",
+          price: 100,
+          price_min: null,
+          price_max: null,
+          status: "available",
+          seller_id: "seller",
+          created_at: "2026-01-01",
+          updated_at: "2026-01-01",
+        }}
+      />,
+    );
+
+    await screen.findByRole("img", { name: "Calculator photo 1" });
+    const images = [...document.querySelectorAll("img")];
+    expect(images).toHaveLength(2);
+    expect(images.every((image) => image.getAttribute("src") === "https://cdn.example.test/calculator.png")).toBe(true);
+  });
 });

@@ -14,23 +14,18 @@ import appCss from "../styles.css?url";
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Go home
-          </Link>
-        </div>
-      </div>
-    </div>
+    <main className="camflea-standalone-state">
+      <section className="camflea-state-card">
+        <img src="/camflea-assets/logo.png" alt="CamFlea" />
+        <span className="eyebrow">CAMFLEA MARKETPLACE</span>
+        <strong className="camflea-state-code">404</strong>
+        <h1>That page wandered off.</h1>
+        <p>The page you’re looking for doesn’t exist or has moved.</p>
+        <Link to="/" className="camflea-state-action">
+          Browse listings
+        </Link>
+      </section>
+    </main>
   );
 }
 
@@ -39,33 +34,28 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
+    <main className="camflea-standalone-state">
+      <section className="camflea-state-card">
+        <img src="/camflea-assets/logo.png" alt="CamFlea" />
+        <span className="eyebrow">A SMALL DETOUR</span>
+        <h1>This page didn’t load.</h1>
+        <p>Something went wrong on our end. Try again or head back to the marketplace.</p>
+        <div className="camflea-state-actions">
           <button
             onClick={() => {
               router.invalidate();
               reset();
             }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="camflea-state-action"
           >
             Try again
           </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
+          <Link to="/" className="camflea-state-action camflea-state-action-secondary">
+            Browse listings
+          </Link>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
 
@@ -101,7 +91,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
         rel: "stylesheet",
         href: "https://fonts.googleapis.com/css2?family=Epilogue:wght@400;500;600;700&family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&display=swap",
       },
-      { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
+      { rel: "icon", href: "/camflea-assets/logo.png", type: "image/png" },
     ],
   }),
   shellComponent: RootShell,

@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { canTakeTransactionAction, formatPeso, type TransactionAction } from "@/lib/camflea-workflow";
 import { authInputSchema } from "@/lib/validation/auth";
+import { updateOwnProfile } from "@/server/profile";
 
 type Listing = Tables<"marketplace_listings">;
 type Profile = Tables<"student_profiles">;
@@ -360,18 +361,21 @@ export function CamFleaApp({ view }: { view: RouteView }) {
     event.preventDefault();
     if (!userId) return;
     const form = new FormData(event.currentTarget);
-    const { error } = await supabase.from("student_profiles").update({
-      first_name: String(form.get("first_name") ?? "").trim(),
-      last_name: String(form.get("last_name") ?? "").trim(),
-      school: String(form.get("school") ?? "").trim() || null,
-      program: String(form.get("program") ?? "").trim() || null,
-      year_level: String(form.get("year_level") ?? "").trim() || null,
-      bio: String(form.get("bio") ?? "").trim() || null,
-    }).eq("user_id", userId);
-    if (error) toast.error(error.message);
-    else {
+    try {
+      await updateOwnProfile({
+        data: {
+          firstName: String(form.get("first_name") ?? ""),
+          lastName: String(form.get("last_name") ?? ""),
+          school: String(form.get("school") ?? ""),
+          program: String(form.get("program") ?? ""),
+          yearLevel: String(form.get("year_level") ?? ""),
+          bio: String(form.get("bio") ?? ""),
+        },
+      });
       toast.success("Profile saved");
       await loadData();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save your profile.");
     }
   }
 
@@ -389,6 +393,12 @@ export function CamFleaApp({ view }: { view: RouteView }) {
       _notification_id: notification.id,
     });
     if (!error) await loadData();
+  }
+
+  async function markAllNotificationsRead() {
+    const { error } = await supabase.rpc("marketplace_mark_all_notifications_read");
+    if (error) toast.error("Could not mark notifications as read.");
+    else await loadData();
   }
 
   const avatarUrl = profile?.profile_image || "/camflea-assets/avatar-placeholder.png";
@@ -470,7 +480,7 @@ export function CamFleaApp({ view }: { view: RouteView }) {
 
           {view === "messages" && <section className="content-view"><PageTitle eyebrow="BETTER DEALS START WITH A NOTE" title="Messages" subtitle="Ask a question. Find a meet-up time. Make it easy." />{!userId ? <SignInPrompt onSignIn={() => void navigate({ to: "/auth" })} /> : <MessageCenter messages={messages} profiles={profiles} listings={listings} currentUser={userId} onSend={sendMessage} />}</section>}
 
-          {view === "notifications" && <section className="content-view"><PageTitle eyebrow="A LITTLE CAMPUS UPDATE" title="Notifications" subtitle="Requests, replies, and the details that move a deal along." />{!userId ? <SignInPrompt onSignIn={() => void navigate({ to: "/auth" })} /> : notifications.length ? <div className="notification-list">{notifications.map((item) => <button className={`notification-row ${item.is_read ? "read" : "unread"}`} key={item.id} onClick={() => void markNotificationRead(item)}><span className="notification-symbol"><Bell size={17} /></span><span className="notification-copy"><strong>{item.content}</strong><span>{item.kind.replaceAll("_", " ")} · {shortDate(item.created_at)}</span></span>{!item.is_read && <span className="notification-unread" />}</button>)}</div> : <EmptyState icon={<Bell size={24} />} title="You’re all caught up." copy="New requests and messages will show up here." />}</section>}
+          {view === "notifications" && <section className="content-view"><PageTitle eyebrow="A LITTLE CAMPUS UPDATE" title="Notifications" subtitle="Requests, replies, and the details that move a deal along." />{!userId ? <SignInPrompt onSignIn={() => void navigate({ to: "/auth" })} /> : notifications.length ? <><NotificationToolbar unreadCount={unreadCount} onMarkAllRead={() => void markAllNotificationsRead()} /><div className="notification-list">{notifications.map((item) => <button className={`notification-row ${item.is_read ? "read" : "unread"}`} key={item.id} onClick={() => void markNotificationRead(item)}><span className="notification-symbol"><Bell size={17} /></span><span className="notification-copy"><strong>{item.content}</strong><span>{item.kind.replaceAll("_", " ")} · {shortDate(item.created_at)}</span></span>{!item.is_read && <span className="notification-unread" />}</button>)}</div></> : <EmptyState icon={<Bell size={24} />} title="You’re all caught up." copy="New requests and messages will show up here." />}</section>}
 
           {view === "profile" && <section className="content-view"><PageTitle eyebrow="YOUR CAMPUS, YOUR PROFILE" title="My profile" subtitle="The details other students see when you trade." />{!userId ? <SignInPrompt onSignIn={() => void navigate({ to: "/auth" })} /> : profile ? <form className="profile-form form-stack" onSubmit={updateProfile}><div className="profile-banner"><img src={avatarUrl} alt="Profile" /><div><strong>{nameOf(profile)}</strong><span>{profile.school || "School not added"}</span></div><span className="member-chip"><ShieldCheck size={14} /> Student member</span></div><div className="form-section"><h2>About you</h2><div className="form-row"><Field label="First name"><Input name="first_name" defaultValue={profile.first_name} required /></Field><Field label="Last name"><Input name="last_name" defaultValue={profile.last_name} required /></Field></div><Field label="School"><Input name="school" defaultValue={profile.school ?? ""} placeholder="School or campus" /></Field><div className="form-row"><Field label="Program"><Input name="program" defaultValue={profile.program ?? ""} placeholder="Program / department" /></Field><Field label="Year level"><Input name="year_level" defaultValue={profile.year_level ?? ""} placeholder="e.g. 2nd year" /></Field></div><Field label="A little about you"><Textarea name="bio" defaultValue={profile.bio ?? ""} rows={4} placeholder="What are you studying? What do you enjoy finding?" /></Field></div><div className="profile-email"><Mail size={17} /><span><strong>Account email</strong><span>Managed securely by your sign-in account</span></span></div><Button type="submit">Save profile</Button></form> : <EmptyState icon={<CircleUserRound size={24} />} title="Finishing your profile…" copy="Your student profile is being prepared." />}</section>}
 
@@ -489,6 +499,16 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 function PageTitle({ eyebrow, title, subtitle }: { eyebrow: string; title: string; subtitle: string }) {
   return <div className="page-heading content-heading"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="page-intro">{subtitle}</p></div></div>;
+}
+
+export function NotificationToolbar({
+  unreadCount,
+  onMarkAllRead,
+}: {
+  unreadCount: number;
+  onMarkAllRead: () => void;
+}) {
+  return <div className="notification-toolbar"><span>{unreadCount} unread</span>{unreadCount > 0 && <Button variant="outline" size="sm" onClick={onMarkAllRead}>Mark all as read</Button>}</div>;
 }
 
 function ListingCard({ listing, seller, onOpen, onCart, onFavorite }: { listing: Listing; seller?: Profile | undefined; onOpen: () => void; onCart: () => void; onFavorite: () => void }) {

@@ -8,8 +8,8 @@ import {
   loadAdminReports,
   reportQueuePageSize,
   reviewAdminReport,
-} from "@/features/admin/report-actions.server";
-import type { ReportQueueFilters } from "@/features/admin/report-actions.server";
+  type ReportQueueFilters,
+} from "@/features/admin/report-actions";
 import type { Tables } from "@/integrations/supabase/types";
 
 export type ReportQueueRecord = Pick<
@@ -90,8 +90,8 @@ export function AdminReportQueue({
   }
 
   return (
-    <main className="mx-auto w-full max-w-6xl space-y-6 px-4 py-8 sm:px-6">
-      <header className="flex items-start gap-3 rounded-2xl bg-green-700 p-5 text-white shadow-sm sm:p-7">
+    <section className="admin-report-page content-view">
+      <header className="admin-report-header page-heading">
         <ShieldCheck aria-hidden="true" className="mt-1 shrink-0" />
         <div>
           <p className="text-sm font-medium text-green-50">CamFlea safety desk</p>
@@ -102,7 +102,7 @@ export function AdminReportQueue({
         </div>
       </header>
 
-      <section className="space-y-4" aria-labelledby="report-list-heading">
+      <section className="admin-report-section space-y-4" aria-labelledby="report-list-heading">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 id="report-list-heading" className="text-xl font-semibold">
@@ -222,6 +222,6 @@ export function AdminReportQueue({
           </p>
         ) : null}
       </section>
-    </main>
+    </section>
   );
 }

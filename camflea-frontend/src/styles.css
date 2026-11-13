@@ -1934,6 +1934,132 @@ body {
   }
 }
 
+.notification-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: -0.5rem 0 1rem;
+  color: var(--camflea-muted, #5f6f61);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.admin-report-page {
+  width: min(100%, 70rem);
+  margin-inline: auto;
+  padding: clamp(1.15rem, 3vw, 2.4rem);
+}
+
+.admin-report-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.9rem;
+  margin-bottom: 1.5rem;
+  padding: 1.25rem 1.35rem;
+  border: 1px solid rgba(6, 146, 16, 0.16);
+  border-left: 4px solid var(--cf-green);
+  border-radius: 1rem;
+  background: #fff;
+  box-shadow: 0 10px 26px rgba(37, 83, 45, 0.07);
+}
+
+.admin-report-header h1 {
+  margin: 0.2rem 0 0;
+  font-family: var(--cf-display);
+  color: var(--cf-ink);
+  font-size: clamp(1.8rem, 3vw, 2.35rem);
+}
+
+.admin-report-header p {
+  color: var(--cf-ink-muted);
+}
+
+.admin-report-section {
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.76);
+}
+
+.camflea-standalone-state {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 1.25rem;
+  background: linear-gradient(135deg, var(--cf-green-wash), var(--cf-green-soft));
+}
+
+.camflea-state-card {
+  width: min(100%, 30rem);
+  padding: clamp(1.7rem, 5vw, 3rem);
+  border: 1px solid rgba(6, 146, 16, 0.16);
+  border-radius: 1.5rem;
+  background: #fff;
+  box-shadow: 0 24px 60px rgba(31, 79, 39, 0.13);
+  text-align: center;
+}
+
+.camflea-state-card > img {
+  width: min(11rem, 70%);
+  height: auto;
+  margin: 0 auto 1.8rem;
+}
+
+.camflea-state-card h1 {
+  margin: 0.3rem 0 0.7rem;
+  color: var(--cf-ink);
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 5vw, 2.4rem);
+}
+
+.camflea-state-card p {
+  margin: 0 auto 1.4rem;
+  max-width: 25rem;
+  color: var(--cf-ink-muted);
+}
+
+.camflea-state-code {
+  display: block;
+  margin-top: 0.5rem;
+  color: var(--cf-green);
+  font-family: var(--font-display);
+  font-size: clamp(3.5rem, 12vw, 6rem);
+  line-height: 0.95;
+}
+
+.camflea-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.65rem;
+}
+
+.camflea-state-action {
+  display: inline-flex;
+  min-height: 2.7rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--cf-green);
+  border-radius: 0.75rem;
+  background: var(--cf-green);
+  color: #fff;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.camflea-state-action:hover {
+  background: var(--cf-green-deep);
+}
+
+.camflea-state-action-secondary {
+  border-color: rgba(6, 146, 16, 0.26);
+  background: #fff;
+  color: var(--cf-green-deep);
+}
+
 /* Feature-route composition uses the same legacy-inspired hierarchy. */
 .browse-page,
 .listing-detail-page,

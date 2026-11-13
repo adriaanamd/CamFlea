@@ -16,26 +16,26 @@ export function ListingDetail({
   onReport?: () => void;
 }) {
   const [selected, setSelected] = useState(0);
-  const selectedPhoto = listing.photos[selected];
-  const [selectedUrl, setSelectedUrl] = useState<string | null>(
-    selectedPhoto && /^https?:\/\//.test(selectedPhoto) ? selectedPhoto : null,
-  );
+  const [photoUrls, setPhotoUrls] = useState<(string | null)[]>([]);
   useEffect(() => {
-    if (!selectedPhoto || /^https?:\/\//.test(selectedPhoto)) {
-      setSelectedUrl(selectedPhoto ?? null);
-      return;
-    }
     let active = true;
-    void supabase.storage
-      .from("camflea-listings")
-      .createSignedUrl(selectedPhoto, 3600)
-      .then(({ data }) => {
-        if (active) setSelectedUrl(data?.signedUrl ?? null);
-      });
+    setSelected(0);
+    void Promise.all(
+      listing.photos.map(async (photo) => {
+        if (/^https?:\/\//.test(photo)) return photo;
+        const { data } = await supabase.storage
+          .from("camflea-listings")
+          .createSignedUrl(photo, 3600);
+        return data?.signedUrl ?? null;
+      }),
+    ).then((urls) => {
+      if (active) setPhotoUrls(urls);
+    });
     return () => {
       active = false;
     };
-  }, [selectedPhoto]);
+  }, [listing.photos]);
+  const selectedUrl = photoUrls[selected] ?? null;
   const available = listing.status === "available";
   return (
     <main className="listing-detail-page">
@@ -60,7 +60,11 @@ export function ListingDetail({
               onClick={() => setSelected(index)}
               className="h-16 w-16 overflow-hidden rounded-xl border"
             >
-              <img src={photo} alt="" className="h-full w-full object-cover" />
+              {photoUrls[index] ? (
+                <img src={photoUrls[index] ?? undefined} alt="" className="h-full w-full object-cover" />
+              ) : (
+                <span aria-hidden="true" className="block h-full w-full bg-muted" />
+              )}
             </button>
           ))}
         </div>

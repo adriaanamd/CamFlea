@@ -31,7 +31,7 @@ export const sendMessage = createServerFn({ method: "POST" })
   });
 export const markThreadRead = createServerFn({ method: "POST" })
   .middleware(auth)
-  .validator((input: { threadId: string }) => input)
+  .validator((input: { senderId: string; listingId?: string }) => input)
   .handler(async ({ context, data }) => {
     const { createMessageService, createRepository } = await import("@/server/messages.server");
     const { supabase, userId } = context as AuthContext;

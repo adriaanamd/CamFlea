@@ -112,6 +112,29 @@ USING (
 );
 
 DROP POLICY IF EXISTS "Listing media belongs to the listing owner" ON public.marketplace_listing_media;
+DROP POLICY IF EXISTS "Public listing media read" ON public.marketplace_listing_media;
+CREATE POLICY "Public listing media read"
+ON public.marketplace_listing_media FOR SELECT TO anon, authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.marketplace_listings AS listing
+    WHERE listing.id = listing_id
+      AND (
+        listing.status = 'available'
+        OR listing.seller_id = auth.uid()
+        OR EXISTS (
+          SELECT 1
+          FROM public.marketplace_transactions AS transaction_row
+          WHERE transaction_row.listing_id = listing.id
+            AND (transaction_row.buyer_id = auth.uid() OR transaction_row.seller_id = auth.uid())
+        )
+        OR public.has_role(auth.uid(), 'admin')
+        OR public.has_role(auth.uid(), 'moderator')
+      )
+  )
+);
+
 CREATE POLICY "Listing media belongs to the listing owner"
 ON public.marketplace_listing_media FOR ALL TO authenticated
 USING (
@@ -126,6 +149,22 @@ WITH CHECK (
     WHERE listing.id = listing_id AND listing.seller_id = auth.uid()
   )
 );
+
+DROP POLICY IF EXISTS "Reporters and admins view reports" ON public.marketplace_reports;
+DROP POLICY IF EXISTS "Admins manage reports" ON public.marketplace_reports;
+DROP POLICY IF EXISTS "Reporters and staff view reports" ON public.marketplace_reports;
+DROP POLICY IF EXISTS "Staff manage reports" ON public.marketplace_reports;
+CREATE POLICY "Reporters and staff view reports"
+ON public.marketplace_reports FOR SELECT TO authenticated
+USING (
+  reporter_id = auth.uid()
+  OR public.has_role(auth.uid(), 'admin')
+  OR public.has_role(auth.uid(), 'moderator')
+);
+CREATE POLICY "Staff manage reports"
+ON public.marketplace_reports FOR UPDATE TO authenticated
+USING (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'moderator'))
+WITH CHECK (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'moderator'));
 
 DROP POLICY IF EXISTS "Users can view their account status" ON public.marketplace_account_status;
 CREATE POLICY "Users can view their account status"
@@ -424,6 +463,46 @@ BEGIN
 END;
 $$;
 
+CREATE OR REPLACE FUNCTION public.marketplace_review_report(
+  _report_id UUID,
+  _status TEXT,
+  _reason TEXT DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  report_row public.marketplace_reports%ROWTYPE;
+BEGIN
+  IF auth.uid() IS NULL
+    OR NOT (public.has_role(auth.uid(), 'admin') OR public.has_role(auth.uid(), 'moderator')) THEN
+    RAISE EXCEPTION 'Only marketplace staff can review reports';
+  END IF;
+  IF _status NOT IN ('open', 'reviewed', 'dismissed') THEN
+    RAISE EXCEPTION 'Invalid report status';
+  END IF;
+
+  SELECT * INTO report_row
+  FROM public.marketplace_reports
+  WHERE id = _report_id
+  FOR UPDATE;
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Report not found';
+  END IF;
+
+  UPDATE public.marketplace_reports
+  SET status = _status,
+      details = COALESCE(NULLIF(trim(_reason), ''), details),
+      updated_at = now()
+  WHERE id = report_row.id;
+
+  INSERT INTO public.marketplace_audit_log (actor_id, action, target_type, target_id, reason)
+  VALUES (auth.uid(), 'review_report', 'report', report_row.id, NULLIF(trim(_reason), ''));
+END;
+$$;
+
 REVOKE EXECUTE ON FUNCTION public.marketplace_add_to_cart(UUID) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.marketplace_request_purchase(UUID) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.marketplace_transition_transaction(UUID, TEXT, TEXT) FROM PUBLIC, anon;
@@ -431,6 +510,7 @@ REVOKE EXECUTE ON FUNCTION public.marketplace_mark_notification_read(UUID) FROM 
 REVOKE EXECUTE ON FUNCTION public.marketplace_mark_all_notifications_read() FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.marketplace_send_message(UUID, UUID, TEXT, TEXT[]) FROM PUBLIC, anon;
 REVOKE EXECUTE ON FUNCTION public.marketplace_mark_thread_read(UUID, UUID) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.marketplace_review_report(UUID, TEXT, TEXT) FROM PUBLIC, anon;
 
 GRANT EXECUTE ON FUNCTION public.marketplace_add_to_cart(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.marketplace_request_purchase(UUID) TO authenticated;
@@ -439,6 +519,7 @@ GRANT EXECUTE ON FUNCTION public.marketplace_mark_notification_read(UUID) TO aut
 GRANT EXECUTE ON FUNCTION public.marketplace_mark_all_notifications_read() TO authenticated;
 GRANT EXECUTE ON FUNCTION public.marketplace_send_message(UUID, UUID, TEXT, TEXT[]) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.marketplace_mark_thread_read(UUID, UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.marketplace_review_report(UUID, TEXT, TEXT) TO authenticated;
 
 UPDATE storage.buckets
 SET public = false

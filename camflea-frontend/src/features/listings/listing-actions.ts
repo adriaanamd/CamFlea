@@ -42,23 +42,46 @@ export const createListing = createServerFn({ method: "POST" })
     if (error) throw new Error("Could not create listing.");
     return listing;
   });
+const listingPhotoSchema = z.object({
+  path: z.string().trim().min(1).max(500),
+  mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
+  byteSize: z.number().int().positive().max(10 * 1024 * 1024),
+});
 const listingPhotosSchema = z.object({
   id: listingId,
-  photos: z.array(z.string().trim().min(1).max(500)).max(5),
+  photos: z.array(listingPhotoSchema).max(5),
 });
+
+export type ListingPhoto = z.infer<typeof listingPhotoSchema>;
+
+export function listingMediaRowsForOwner(listingId: string, photos: ListingPhoto[]) {
+  return photos.map((photo, ordering) => ({
+    listing_id: listingId,
+    storage_path: photo.path,
+    ordering,
+    mime_type: photo.mimeType,
+    byte_size: photo.byteSize,
+    upload_status: "ready" as const,
+  }));
+}
+
 export const attachListingPhotos = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(listingPhotosSchema)
   .handler(async ({ data, context }) => {
-    if (data.photos.some((path) => !path.startsWith(`${context.userId}/`))) {
+    if (data.photos.some((photo) => !photo.path.startsWith(`${context.userId}/`))) {
       throw new Error("Listing photo path is not owned by the authenticated user.");
     }
     const { error } = await context.supabase
       .from("marketplace_listings")
-      .update({ photos: data.photos })
+      .update({ photos: data.photos.map((photo) => photo.path) })
       .eq("id", data.id)
       .eq("seller_id", context.userId);
     if (error) throw new Error("Could not attach listing photos.");
+    const { error: mediaError } = await context.supabase
+      .from("marketplace_listing_media")
+      .insert(listingMediaRowsForOwner(data.id, data.photos));
+    if (mediaError) throw new Error("Could not attach listing photo metadata.");
     return { success: true };
   });
 export const updateListing = createServerFn({ method: "POST" })

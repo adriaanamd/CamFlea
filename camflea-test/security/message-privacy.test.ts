@@ -18,13 +18,14 @@ describe("message privacy", () => {
       body: "Hi",
     });
     await service.markThreadRead({
-      threadId: "00000000-0000-4000-8000-000000000005",
+      senderId: "00000000-0000-4000-8000-000000000005",
       recipientId: "forged",
     } as never);
     expect(insertMessage.mock.calls[0]?.[0].sender_id).toBe("actor");
     expect(markRecipientMessagesRead).toHaveBeenCalledWith(
       "00000000-0000-4000-8000-000000000005",
       "actor",
+      undefined,
     );
   });
 });

@@ -16,7 +16,7 @@ const sendSchema = z
   .object({
     recipientId: z.string().uuid(),
     listingId: z.string().uuid().optional(),
-    body: z.string().trim().max(4000),
+    body: z.string().trim().max(2000),
     attachments: z.array(attachmentSchema).max(5).default([]),
   })
   .refine((value) => value.body.length > 0 || value.attachments.length > 0, {
@@ -26,7 +26,10 @@ const threadSchema = z.object({
   participantId: z.string().uuid(),
   listingId: z.string().uuid().optional(),
 });
-const readSchema = z.object({ threadId: z.string().uuid() });
+const readSchema = z.object({
+  senderId: z.string().uuid(),
+  listingId: z.string().uuid().optional(),
+});
 
 type MessageRow = Tables<"marketplace_messages">;
 type MessageAttachment = z.infer<typeof attachmentSchema>;
@@ -43,7 +46,11 @@ export type MessageRepository = {
   insertMessage: (
     row: Pick<MessageRow, "sender_id" | "recipient_id" | "listing_id" | "body" | "attachments">,
   ) => Promise<MessageRow>;
-  markRecipientMessagesRead: (threadId: string, recipientId: string) => Promise<void>;
+  markRecipientMessagesRead: (
+    senderId: string,
+    recipientId: string,
+    listingId?: string,
+  ) => Promise<void>;
 };
 
 export function createMessageService(repository: MessageRepository) {
@@ -81,10 +88,10 @@ export function createMessageService(repository: MessageRepository) {
         attachments: message.attachments.map((attachment: MessageAttachment) => attachment.path),
       });
     },
-    async markThreadRead(input: { threadId: string }) {
+    async markThreadRead(input: { senderId: string; listingId?: string }) {
       const userId = await actor();
       const read = readSchema.parse(input);
-      return repository.markRecipientMessagesRead(read.threadId, userId);
+      return repository.markRecipientMessagesRead(read.senderId, userId, read.listingId);
     },
   };
 }
@@ -128,21 +135,32 @@ export function createRepository(
       return Boolean(data);
     },
     insertMessage: async (row) => {
-      const { data, error } = await client
-        .from("marketplace_messages")
-        .insert(row)
-        .select()
-        .single();
+      const { data, error } = await client.rpc("marketplace_send_message", {
+        _recipient_id: row.recipient_id,
+        ...(row.listing_id ? { _listing_id: row.listing_id } : {}),
+        _body: row.body,
+        _attachments: row.attachments,
+      });
       if (error) throw error;
-      return data;
+      if (!data) throw new Error("Message was not created.");
+      const now = new Date().toISOString();
+      return {
+        id: data,
+        sender_id: userId,
+        recipient_id: row.recipient_id,
+        listing_id: row.listing_id,
+        body: row.body,
+        attachments: row.attachments,
+        is_read: false,
+        created_at: now,
+        updated_at: now,
+      };
     },
-    markRecipientMessagesRead: async (threadId, recipientId) => {
-      const { error } = await client
-        .from("marketplace_messages")
-        .update({ is_read: true })
-        .eq("recipient_id", recipientId)
-        .eq("is_read", false)
-        .eq("id", threadId);
+    markRecipientMessagesRead: async (senderId, recipientId, listingId) => {
+      const { error } = await client.rpc("marketplace_mark_thread_read", {
+        _sender_id: senderId,
+        ...(listingId ? { _listing_id: listingId } : {}),
+      });
       if (error) throw error;
     },
   };

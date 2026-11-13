@@ -480,6 +480,10 @@ export type Database = {
         Args: { _listing_id?: string; _sender_id: string }
         Returns: number
       }
+      marketplace_review_report: {
+        Args: { _reason?: string; _report_id: string; _status: string }
+        Returns: undefined
+      }
       marketplace_send_message: {
         Args: {
           _attachments?: string[]

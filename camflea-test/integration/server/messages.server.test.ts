@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { createMessageService } from "@/server/messages.server";
+import { createMessageService, createRepository } from "@/server/messages.server";
 
 describe("private message reads", () => {
   it("reads a thread only for an authenticated participant", async () => {
@@ -61,5 +61,44 @@ describe("message input validation", () => {
       }),
     ).rejects.toThrow();
     expect(insertMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe("message mutation repository", () => {
+  it("uses the authenticated message RPC instead of a client-controlled insert", async () => {
+    const rpc = vi.fn(async () => ({
+      data: "00000000-0000-4000-8000-000000000009",
+      error: null,
+    }));
+    const repository = createRepository({ rpc } as never, "00000000-0000-4000-8000-000000000001");
+
+    const message = await repository.insertMessage({
+      sender_id: "forged-sender",
+      recipient_id: "00000000-0000-4000-8000-000000000002",
+      listing_id: "00000000-0000-4000-8000-000000000003",
+      body: "Hello",
+      attachments: ["student/file.jpg"],
+    } as never);
+
+    expect(rpc).toHaveBeenCalledWith("marketplace_send_message", {
+      _recipient_id: "00000000-0000-4000-8000-000000000002",
+      _listing_id: "00000000-0000-4000-8000-000000000003",
+      _body: "Hello",
+      _attachments: ["student/file.jpg"],
+    });
+    expect(message.id).toBe("00000000-0000-4000-8000-000000000009");
+    expect(message.sender_id).toBe("00000000-0000-4000-8000-000000000001");
+  });
+
+  it("marks a participant thread read through the narrow read RPC", async () => {
+    const rpc = vi.fn(async () => ({ data: 2, error: null }));
+    const repository = createRepository({ rpc } as never, "actor");
+
+    await repository.markRecipientMessagesRead("sender", "actor", "listing");
+
+    expect(rpc).toHaveBeenCalledWith("marketplace_mark_thread_read", {
+      _sender_id: "sender",
+      _listing_id: "listing",
+    });
   });
 });

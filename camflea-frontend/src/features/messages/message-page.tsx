@@ -71,8 +71,10 @@ export function MessagePage() {
       ...current.filter((row) => !thread.some((item) => item.id === row.id)),
       ...thread,
     ]);
-    const unread = thread.filter((row) => row.recipient_id === userId && !row.is_read);
-    await Promise.all(unread.map((row) => markThreadRead({ data: { threadId: row.id } })));
+    const unread = thread.some((row) => row.recipient_id === userId && !row.is_read);
+    if (unread) {
+      await markThreadRead({ data: { senderId: selected } });
+    }
   }, [selected, userId, listingId]);
   useEffect(() => {
     if (!selected) return;

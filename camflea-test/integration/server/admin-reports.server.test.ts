@@ -17,30 +17,35 @@ describe("listReportsForStaff", () => {
       listReportsForStaff(client as never, "student-id", { status: "open", page: 0 }),
     ).rejects.toThrow("Staff access required");
 
-    expect(client.rpc).toHaveBeenCalledTimes(1);
+    expect(client.rpc).toHaveBeenCalledTimes(2);
     expect(client.from).not.toHaveBeenCalled();
   });
 });
 
 describe("reviewReportForStaff", () => {
   it("updates only an open report after server-side staff verification", async () => {
-    const query = {
-      update: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      select: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockResolvedValue({ data: { id: "report-1" }, error: null }),
-    };
     const client = {
-      rpc: vi.fn().mockResolvedValue({ data: true, error: null }),
-      from: vi.fn().mockReturnValue(query),
+      rpc: vi
+        .fn()
+        .mockResolvedValueOnce({ data: false, error: null })
+        .mockResolvedValueOnce({ data: true, error: null })
+        .mockResolvedValueOnce({ data: null, error: null }),
     };
 
     await expect(reviewReportForStaff(client as never, "moderator-id", "report-1")).resolves.toEqual({ id: "report-1" });
 
-    expect(client.rpc).toHaveBeenCalledWith("has_role", { _user_id: "moderator-id", _role: "admin" });
-    expect(query.update).toHaveBeenCalledWith({ status: "reviewed" });
-    expect(query.eq).toHaveBeenNthCalledWith(1, "id", "report-1");
-    expect(query.eq).toHaveBeenNthCalledWith(2, "status", "open");
+    expect(client.rpc).toHaveBeenNthCalledWith(1, "has_role", {
+      _user_id: "moderator-id",
+      _role: "admin",
+    });
+    expect(client.rpc).toHaveBeenNthCalledWith(2, "has_role", {
+      _user_id: "moderator-id",
+      _role: "moderator",
+    });
+    expect(client.rpc).toHaveBeenNthCalledWith(3, "marketplace_review_report", {
+      _report_id: "report-1",
+      _status: "reviewed",
+    });
   });
 });
 

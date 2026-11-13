@@ -43,4 +43,22 @@ describe("CamFlea hardening migration", () => {
     expect(sql).toMatch(/bucket_id = 'camflea-listings'/i);
     expect(sql).toMatch(/auth\.uid\(\)/i);
   });
+
+  it("allows RLS to resolve media for public available listings", () => {
+    const sql = migrationSql();
+
+    expect(sql).toMatch(
+      /CREATE POLICY [\s\S]*listing media.*read[\s\S]*ON public\.marketplace_listing_media FOR SELECT TO anon, authenticated/i,
+    );
+    expect(sql).toMatch(/listing\.status = 'available'/i);
+  });
+
+  it("authorizes moderator report review through an audited RPC", () => {
+    const sql = migrationSql();
+
+    expect(sql).toMatch(/CREATE POLICY [\s\S]*staff.*reports[\s\S]*ON public\.marketplace_reports FOR UPDATE TO authenticated/i);
+    expect(sql).toMatch(/has_role\(auth\.uid\(\), 'moderator'\)/i);
+    expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.marketplace_review_report/i);
+    expect(sql).toMatch(/INSERT INTO public\.marketplace_audit_log/i);
+  });
 });
