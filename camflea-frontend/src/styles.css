@@ -3085,3 +3085,14 @@ body {
     justify-content: flex-start;
   }
 }
+
+.camflea-logout {
+  width: 100%;
+  margin-top: 0.75rem;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+

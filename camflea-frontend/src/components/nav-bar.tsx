@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 
+import { LogOut } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 
 import { Navigation } from "@/components/navigation";
@@ -47,20 +48,10 @@ export function NavBar({ children, user, unreadCount, isStaff, isAdmin = false }
         </div>
         <div className="camflea-header-account">
           {user ? (
-            <>
-              <Link to={isAdmin ? "/admin" : "/profile"} className="camflea-account-chip">
-                <img src={user.profileImage || "/camflea-assets/avatar-placeholder.png"} alt="" />
-                <span>{user.firstName}</span>
-              </Link>
-              <button
-                type="button"
-                className="camflea-login-link"
-                disabled={signingOut}
-                onClick={() => void handleLogout()}
-              >
-                {signingOut ? "Logging outâ€¦" : "Log out"}
-              </button>
-            </>
+            <Link to={isAdmin ? "/admin" : "/profile"} className="camflea-account-chip">
+              <img src={user.profileImage || "/camflea-assets/avatar-placeholder.png"} alt="" />
+              <span>{user.firstName}</span>
+            </Link>
           ) : (
             <Link to="/auth" className="camflea-login-link">
               Log in
@@ -75,6 +66,19 @@ export function NavBar({ children, user, unreadCount, isStaff, isAdmin = false }
         >
           <div className="camflea-sidebar-label">{isAdmin ? "ADMINISTRATION" : "MARKETPLACE"}</div>
           <Navigation unreadCount={unreadCount} isStaff={isStaff} isAdmin={isAdmin} />
+          {user ? (
+            <button
+              type="button"
+              className="camflea-nav-link camflea-logout"
+              disabled={signingOut}
+              onClick={() => void handleLogout()}
+            >
+              <span className="camflea-nav-icon">
+                <LogOut aria-hidden="true" size={18} strokeWidth={1.8} />
+              </span>
+              <span className="camflea-nav-text">{signingOut ? "Logging out…" : "Log out"}</span>
+            </button>
+          ) : null}
           <div className="camflea-sidebar-note">
             <strong>{isAdmin ? "Keep CamFlea safe." : "Buy a little closer."}</strong>
             <span>
