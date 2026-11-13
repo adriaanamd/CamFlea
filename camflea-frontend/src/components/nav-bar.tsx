@@ -15,6 +15,12 @@ export type NavBarProps = {
 export function NavBar({ children, user, unreadCount, isStaff }: NavBarProps) {
   return (
     <div className="camflea-shell">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[200] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:font-semibold focus:text-primary focus:shadow-lg"
+      >
+        Skip to content
+      </a>
       <header className="camflea-header">
         <Link to="/" className="camflea-brand" aria-label="CamFlea home">
           <img src="/camflea-assets/logo-white.png" alt="CamFlea" />
@@ -45,7 +51,9 @@ export function NavBar({ children, user, unreadCount, isStaff }: NavBarProps) {
             <span>Trade useful things with people from your campus.</span>
           </div>
         </aside>
-        <main className="camflea-main">{children}</main>
+        <main id="main-content" tabIndex={-1} className="camflea-main">
+          {children}
+        </main>
       </div>
     </div>
   );

@@ -38,7 +38,11 @@ function SellPage() {
         ) {
           throw new Error("Choose JPEG, PNG, or WebP images under 5 MB each.");
         }
-        const extension = file.name.split(".").pop()?.replace(/[^a-z0-9]/gi, "") || "jpg";
+        const extension =
+          file.name
+            .split(".")
+            .pop()
+            ?.replace(/[^a-z0-9]/gi, "") || "jpg";
         const path = `${userId}/${listingId}/${crypto.randomUUID()}.${extension}`;
         const { error: uploadError } = await supabase.storage
           .from("camflea-listings")

@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ListingDetail } from "@/features/listings/listing-detail";
 import { CamFleaPageShell } from "@/components/camflea-page-shell";
+import { FeedbackState } from "@/components/feedback-state";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -47,23 +48,43 @@ function ListingRoute() {
   }, [listingId]);
   if (state === "loading")
     return (
-      <p role="status" className="p-8">
-        Loading listing…
-      </p>
+      <CamFleaPageShell>
+        <FeedbackState kind="loading" title="Loading listing…" />
+      </CamFleaPageShell>
     );
   if (state === "error")
     return (
-      <p role="alert" className="p-8">
-        Could not load this listing. <button onClick={() => location.reload()}>Try again</button>
-      </p>
+      <CamFleaPageShell>
+        <FeedbackState
+          kind="error"
+          title="Could not load this listing"
+          copy="Check your connection and try again."
+          action={
+            <button
+              type="button"
+              className="rounded-full bg-primary px-4 py-2 font-semibold text-primary-foreground"
+              onClick={() => location.reload()}
+            >
+              Try again
+            </button>
+          }
+        />
+      </CamFleaPageShell>
     );
   if (state === "missing" || !listing)
     return (
-      <main className="p-8">
-        <h1>Listing unavailable</h1>
-        <p>This listing may have been removed or is not visible.</p>
-        <Link to="/">Browse listings</Link>
-      </main>
+      <CamFleaPageShell>
+        <FeedbackState
+          kind="unavailable"
+          title="Listing unavailable"
+          copy="This listing may have been removed or is not visible."
+          action={
+            <Link to="/" className="font-semibold text-primary underline">
+              Browse listings
+            </Link>
+          }
+        />
+      </CamFleaPageShell>
     );
   return (
     <CamFleaPageShell>

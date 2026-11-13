@@ -63,11 +63,13 @@ export function BrowsePage({
     [listings, options],
   );
   return (
-    <main className="browse-page">
+    <div className="browse-page">
       <header className="page-heading">
         <div>
           <p className="eyebrow">CAMPUS FINDS, SECOND LIFE</p>
-          <h1>Find your next <em>good thing.</em></h1>
+          <h1>
+            Find your next <em>good thing.</em>
+          </h1>
           <p className="page-intro">Browse useful items listed by your campus community.</p>
         </div>
       </header>
@@ -95,14 +97,28 @@ export function BrowsePage({
       <div className="catalog-bar browse-catalog-bar">
         <div>
           <h2>Recently listed</h2>
-          <span>{results.length} {results.length === 1 ? "item" : "items"}</span>
+          <span aria-live="polite">
+            {results.length} {results.length === 1 ? "item" : "items"}
+          </span>
         </div>
       </div>
       {stale && <p role="status">Showing saved results while refreshing.</p>}
       {loading ? (
         <p role="status">Loading listings…</p>
       ) : error ? (
-        <p role="alert">Could not load listings. {error}</p>
+        <div
+          role="alert"
+          className="rounded-2xl border border-destructive/40 bg-card p-6 text-center"
+        >
+          <p className="font-semibold">Could not load listings. {error}</p>
+          <button
+            type="button"
+            className="mt-3 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:opacity-90"
+            onClick={() => window.location.reload()}
+          >
+            Retry
+          </button>
+        </div>
       ) : results.length ? (
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((listing) => (
@@ -118,7 +134,8 @@ export function BrowsePage({
           <h3 className="text-lg font-semibold">No listings match your search</h3>
           <p className="mt-2 text-muted-foreground">Try another search or clear your filters.</p>
           <button
-            className="mt-4 underline"
+            type="button"
+            className="mt-4 rounded-full border px-4 py-2 text-sm font-semibold text-primary hover:bg-accent"
             onClick={() =>
               setOptions({ query: "", category: "all", condition: "all", sort: "newest" })
             }
@@ -127,6 +144,6 @@ export function BrowsePage({
           </button>
         </section>
       )}
-    </main>
+    </div>
   );
 }

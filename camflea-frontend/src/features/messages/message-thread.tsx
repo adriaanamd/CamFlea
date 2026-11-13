@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,13 +11,19 @@ export function MessageThread({
   messages,
   onSend,
   onBack,
+  currentUserId,
 }: {
   participantName: string;
   listingTitle?: string | undefined;
   messages: Message[];
   onSend: (body: string) => Promise<void>;
   onBack?: () => void;
+  currentUserId?: string | undefined;
 }) {
+  const endRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    endRef.current?.scrollIntoView?.({ block: "end" });
+  }, [messages.length]);
   const [body, setBody] = useState("");
   const [failedBody, setFailedBody] = useState("");
   const [error, setError] = useState("");
@@ -40,10 +46,7 @@ export function MessageThread({
     }
   }
   return (
-    <section
-      aria-label={`Conversation with ${participantName}`}
-      className="message-thread-panel"
-    >
+    <section aria-label={`Conversation with ${participantName}`} className="message-thread-panel">
       <header className="flex items-center gap-3 border-b p-4">
         {onBack && (
           <Button variant="ghost" size="icon" aria-label="Back to conversations" onClick={onBack}>
@@ -57,9 +60,14 @@ export function MessageThread({
       </header>
       <div className="flex-1 space-y-3 overflow-y-auto p-4" aria-live="polite">
         {messages.map((message) => (
-          <article key={message.id} className="max-w-[85%] rounded-xl bg-muted p-3">
+          <article
+            key={message.id}
+            className={`max-w-[85%] rounded-xl p-3 ${message.sender_id === currentUserId ? "ml-auto bg-primary text-primary-foreground" : "bg-muted"}`}
+          >
             <p className="whitespace-pre-wrap break-words">{message.body}</p>
-            <time className="text-xs text-muted-foreground">
+            <time
+              className={`text-xs ${message.sender_id === currentUserId ? "text-primary-foreground/80" : "text-muted-foreground"}`}
+            >
               {new Date(message.created_at).toLocaleString()}
             </time>
           </article>

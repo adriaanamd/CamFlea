@@ -45,7 +45,11 @@ export const createListing = createServerFn({ method: "POST" })
 const listingPhotoSchema = z.object({
   path: z.string().trim().min(1).max(500),
   mimeType: z.enum(["image/jpeg", "image/png", "image/webp"]),
-  byteSize: z.number().int().positive().max(10 * 1024 * 1024),
+  byteSize: z
+    .number()
+    .int()
+    .positive()
+    .max(10 * 1024 * 1024),
 });
 const listingPhotosSchema = z.object({
   id: listingId,

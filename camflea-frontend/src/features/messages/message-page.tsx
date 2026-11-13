@@ -171,6 +171,7 @@ export function MessagePage() {
               messages={conversation.messages}
               onBack={() => setMobileThread(false)}
               onSend={submit}
+              currentUserId={userId}
             />
           </div>
         )}

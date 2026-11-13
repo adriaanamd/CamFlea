@@ -2366,3 +2366,32 @@ body {
     overflow-y: auto;
   }
 }
+
+/* Conventional layout: sidebar pinned to the viewport's left edge; content centered in remaining space. */
+.camflea-layout,
+.market-layout {
+  width: 100%;
+  margin: 0;
+}
+
+.camflea-main,
+.main-stage {
+  width: 100%;
+  max-width: 1320px;
+  margin-inline: auto;
+}
+
+.camflea-sidebar,
+.side-rail {
+  align-self: start;
+  height: calc(100vh - 84px);
+  min-height: 0;
+  overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+  .camflea-sidebar,
+  .side-rail {
+    height: auto;
+  }
+}
