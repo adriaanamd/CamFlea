@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { CamFleaApp } from "@/components/camflea-app";
+import { CamFleaPageShell } from "@/components/camflea-page-shell";
 
 export const Route = createFileRoute("/transactions")({
   head: () => ({ meta: [
@@ -10,5 +11,9 @@ export const Route = createFileRoute("/transactions")({
     { property: "og:type", content: "website" },
     { name: "twitter:card", content: "summary" },
   ] }),
-  component: () => <CamFleaApp view="transactions" />,
+  component: () => (
+    <CamFleaPageShell>
+      <CamFleaApp view="transactions" />
+    </CamFleaPageShell>
+  ),
 });

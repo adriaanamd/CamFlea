@@ -9,17 +9,14 @@ import {
   CircleUserRound,
   Filter,
   Heart,
-  LogOut,
   Mail,
   MessageCircle,
   PackageCheck,
   Plus,
-  Search,
   ShieldCheck,
   ShoppingBag,
   ShoppingCart,
   SlidersHorizontal,
-  Sparkles,
   Star,
   Tag,
   X,
@@ -46,13 +43,6 @@ type RouteView = "browse" | "auth" | "sell" | "transactions" | "messages" | "not
 
 const categories = ["All items", "Books & School Supplies", "Clothes & Accessories", "Gadgets & Electronics", "Sports & Outdoors", "Crafted & Collectibles", "Other"];
 const conditions = ["New", "Like new", "Good", "Fair"];
-const navItems: { href: string; label: string; icon: typeof Search }[] = [
-  { href: "/", label: "Browse items", icon: Search },
-  { href: "/transactions", label: "My transactions", icon: ShoppingBag },
-  { href: "/messages", label: "Messages", icon: MessageCircle },
-  { href: "/notifications", label: "Notifications", icon: Bell },
-];
-
 function nameOf(profile?: Profile | null) {
   if (!profile) return "Campus student";
   return [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Campus student";
@@ -74,7 +64,6 @@ export function CamFleaApp({ view }: { view: RouteView }) {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [isStaff, setIsStaff] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [listings, setListings] = useState<Listing[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -105,15 +94,12 @@ export function CamFleaApp({ view }: { view: RouteView }) {
     setListings(availableListings ?? []);
 
     if (id) {
-      const [profileResult, txResult, notificationResult, messageResult, adminRole, moderatorRole] = await Promise.all([
+      const [profileResult, txResult, notificationResult, messageResult] = await Promise.all([
         supabase.from("student_profiles").select("*").eq("user_id", id).maybeSingle(),
         supabase.from("marketplace_transactions").select("*").order("created_at", { ascending: false }),
         supabase.from("marketplace_notifications").select("*").order("created_at", { ascending: false }).limit(40),
         supabase.from("marketplace_messages").select("*").order("created_at", { ascending: true }).limit(200),
-        supabase.rpc("has_role", { _user_id: id, _role: "admin" }),
-        supabase.rpc("has_role", { _user_id: id, _role: "moderator" }),
       ]);
-      setIsStaff(Boolean(adminRole.data || moderatorRole.data));
       setProfile(profileResult.data ?? null);
       setTransactions(txResult.data ?? []);
       setNotifications(notificationResult.data ?? []);
@@ -142,7 +128,6 @@ export function CamFleaApp({ view }: { view: RouteView }) {
       setNotifications([]);
       setMessages([]);
       setProfiles({});
-      setIsStaff(false);
     }
     setLoading(false);
   }, []);
@@ -191,7 +176,6 @@ export function CamFleaApp({ view }: { view: RouteView }) {
   }, [listings, search, category, condition, sortBy, userId]);
 
   const unreadCount = notifications.filter((notification) => !notification.is_read).length;
-  const cartCount = transactions.filter((transaction) => transaction.buyer_id === userId && transaction.status === "cart").length;
 
   async function requireSignIn(message = "Sign in to continue") {
     if (userId) return true;
@@ -243,13 +227,6 @@ export function CamFleaApp({ view }: { view: RouteView }) {
       }
     }
     setBusy(false);
-  }
-
-  async function signOut() {
-    await supabase.auth.signOut();
-    setProfile(null);
-    setUserId(null);
-    await navigate({ to: "/" });
   }
 
   async function addToCart(listing: Listing) {
@@ -434,34 +411,8 @@ export function CamFleaApp({ view }: { view: RouteView }) {
   }
 
   return (
-    <div className="camflea-shell">
-      <header className="topbar">
-        <Link to="/" className="brand-lockup"><img src="/camflea-assets/logo-white.png" alt="CamFlea" /></Link>
-        <form className="top-search" onSubmit={(event) => event.preventDefault()}>
-          <Search size={18} /><Input aria-label="Search items" placeholder="Search the campus marketplace" value={search} onChange={(event) => setSearch(event.target.value)} />
-          {search && <Button variant="ghost" size="icon" aria-label="Clear search" type="button" onClick={() => setSearch("")}><X /></Button>}
-        </form>
-        <div className="top-actions">
-          <Button variant="ghost" size="icon" aria-label="Cart" title={`${cartCount} cart items`} onClick={() => void navigate({ to: "/transactions" })} className="top-icon"><ShoppingCart /><span className="top-count">{cartCount}</span></Button>
-          <Button variant="ghost" size="icon" aria-label="Notifications" title="Notifications" onClick={() => void navigate({ to: "/notifications" })} className="top-icon top-notify"><Bell />{unreadCount > 0 && <span className="notification-dot">{unreadCount}</span>}</Button>
-          {userId ? <Button variant="ghost" className="account-button" onClick={() => void navigate({ to: "/profile" })}><img src={avatarUrl} alt="" /><span>{profile ? profile.first_name : "My account"}</span><ChevronDown size={14} /></Button> : <Button variant="secondary" onClick={() => void navigate({ to: "/auth" })}>Log in</Button>}
-        </div>
-      </header>
-      <div className="market-layout">
-        <aside className="side-rail">
-          <div className="side-caption">MARKETPLACE</div>
-          <nav className="side-nav" aria-label="Main navigation">
-            {navItems.map(({ href, label, icon: Icon }) => <a key={href} href={href} className={`side-link ${(href === "/" && view === "browse") || href.slice(1) === view ? "active" : ""}`}><Icon size={18} /><span>{label}</span>{href === "/transactions" && cartCount > 0 && <span className="nav-count">{cartCount}</span>}{href === "/notifications" && unreadCount > 0 && <span className="nav-count">{unreadCount}</span>}</a>)}
-          </nav>
-          <div className="rail-divider" />
-          <a href="/sell" className="side-link"><Plus size={18} /><span>Post an item</span></a>
-          {userId && <a href="/profile" className={`side-link ${view === "profile" ? "active" : ""}`}><CircleUserRound size={18} /><span>My profile</span></a>}
-          {isStaff && <a href="/admin" className="side-link"><ShieldCheck size={18} /><span>Admin desk</span></a>}
-          <div className="campus-note"><div className="campus-note-icon"><Sparkles size={17} /></div><strong>Good finds stay local.</strong><p>Buy and sell with people from your campus community.</p></div>
-          {userId && <button className="signout-link" onClick={() => void signOut()}><LogOut size={16} /> Sign out</button>}
-          <div className="rail-footer">CamFlea <span>·</span> Campus marketplace</div>
-        </aside>
-        <main className="main-stage">
+    <div className="legacy-route-content">
+      <div className="main-stage">
           {view === "browse" && <section className="browse-view">
             <div className="page-heading browse-heading"><div><p className="eyebrow">CAMPUS FINDS, SECOND LIFE</p><h1>Find your next <em>good thing.</em></h1><p className="page-intro">A little closer. A lot more useful.</p></div><Button onClick={() => void navigate({ to: userId ? "/sell" : "/auth" })}><Plus size={17} /> Post an item</Button></div>
             <div className="category-strip" role="group" aria-label="Filter by category">{categories.map((value, index) => <button className={`category-chip ${category === value ? "selected" : ""}`} key={value} onClick={() => setCategory(value)}>{index === 1 && <BookOpen size={15} />}{value === "All items" ? "All items" : value.replace(" & School Supplies", "").replace(" & Accessories", "").replace(" & Electronics", "").replace(" & Outdoors", "").replace(" & Collectibles", "")}</button>)}</div>
@@ -485,7 +436,6 @@ export function CamFleaApp({ view }: { view: RouteView }) {
           {view === "profile" && <section className="content-view"><PageTitle eyebrow="YOUR CAMPUS, YOUR PROFILE" title="My profile" subtitle="The details other students see when you trade." />{!userId ? <SignInPrompt onSignIn={() => void navigate({ to: "/auth" })} /> : profile ? <form className="profile-form form-stack" onSubmit={updateProfile}><div className="profile-banner"><img src={avatarUrl} alt="Profile" /><div><strong>{nameOf(profile)}</strong><span>{profile.school || "School not added"}</span></div><span className="member-chip"><ShieldCheck size={14} /> Student member</span></div><div className="form-section"><h2>About you</h2><div className="form-row"><Field label="First name"><Input name="first_name" defaultValue={profile.first_name} required /></Field><Field label="Last name"><Input name="last_name" defaultValue={profile.last_name} required /></Field></div><Field label="School"><Input name="school" defaultValue={profile.school ?? ""} placeholder="School or campus" /></Field><div className="form-row"><Field label="Program"><Input name="program" defaultValue={profile.program ?? ""} placeholder="Program / department" /></Field><Field label="Year level"><Input name="year_level" defaultValue={profile.year_level ?? ""} placeholder="e.g. 2nd year" /></Field></div><Field label="A little about you"><Textarea name="bio" defaultValue={profile.bio ?? ""} rows={4} placeholder="What are you studying? What do you enjoy finding?" /></Field></div><div className="profile-email"><Mail size={17} /><span><strong>Account email</strong><span>Managed securely by your sign-in account</span></span></div><Button type="submit">Save profile</Button></form> : <EmptyState icon={<CircleUserRound size={24} />} title="Finishing your profile…" copy="Your student profile is being prepared." />}</section>}
 
           {view === "admin" && <section className="content-view"><PageTitle eyebrow="CAMPUS CARE" title="Admin desk" subtitle="Keep the CamFlea marketplace safe and useful." />{!userId ? <SignInPrompt onSignIn={() => void navigate({ to: "/auth" })} /> : <AdminDesk listings={listings} transactions={transactions} />}</section>}
-        </main>
       </div>
 
       {selectedListing && <ListingDetail listing={selectedListing} seller={profiles[selectedListing.seller_id]} currentUser={userId} onClose={() => setSelectedListing(null)} onCart={() => void addToCart(selectedListing)} onReport={() => void submitReport(selectedListing)} onSendMessage={(event) => void sendMessage(event, selectedListing.seller_id, selectedListing.id)} />}
