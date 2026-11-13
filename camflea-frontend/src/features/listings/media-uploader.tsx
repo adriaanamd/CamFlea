@@ -1,6 +1,8 @@
 import { useRef, useState, type DragEvent } from "react";
 import { ImagePlus, X } from "lucide-react";
 
+import { ConfirmAction } from "@/components/confirm-action";
+
 const MAX_BYTES = 5 * 1024 * 1024;
 const MAX_PHOTOS = 5;
 const TYPES = ["image/jpeg", "image/png", "image/webp"];
@@ -92,11 +94,10 @@ export function MediaUploader({
                   Cover
                 </span>
               )}
-              <button
-                type="button"
-                aria-label={`Remove photo ${index + 1}`}
-                className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full border bg-background shadow hover:bg-destructive hover:text-destructive-foreground"
-                onClick={() => {
+              <ConfirmAction
+                description={`Remove photo ${index + 1} from this listing?`}
+                confirmLabel="Remove photo"
+                onConfirm={() => {
                   const nextPhotos = photos.filter((_, i) => i !== index);
                   const nextFiles = selectedFiles.filter((_, i) => i !== index);
                   setSelectedFiles(nextFiles);
@@ -104,8 +105,14 @@ export function MediaUploader({
                   onChange(nextPhotos);
                 }}
               >
-                <X aria-hidden="true" size={14} />
-              </button>
+                <button
+                  type="button"
+                  aria-label={`Remove photo ${index + 1}`}
+                  className="absolute -right-2 -top-2 grid h-6 w-6 place-items-center rounded-full border bg-background shadow hover:bg-destructive hover:text-destructive-foreground"
+                >
+                  <X aria-hidden="true" size={14} />
+                </button>
+              </ConfirmAction>
             </li>
           ))}
         </ul>

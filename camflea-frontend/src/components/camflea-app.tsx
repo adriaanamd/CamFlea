@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ConfirmAction } from "@/components/confirm-action";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -517,8 +518,14 @@ function TransactionList({ entries, listings, profiles, currentUser, onAction, b
     if (isBuyer && transaction.status === "sent") actions.push({ key: "received", text: "Mark as received" });
     if (!isBuyer && transaction.status === "received") actions.push({ key: "complete", text: "Complete sale" });
     if (["cart", "requested", "sent", "received"].includes(transaction.status)) actions.push({ key: "cancel", text: "Cancel", style: "outline" });
-    return <article className="transaction-row" key={transaction.id}><div className="transaction-thumb">{item?.photos?.[0] ? <TransactionImage path={item.photos[0]} label={item.title} /> : <ShoppingBag size={22} />}</div><div className="transaction-info"><div className="transaction-title-line"><strong>{item?.title ?? "CamFlea listing"}</strong><span className={`status-pill status-${transaction.status}`}>{transaction.status}</span></div><span>{item ? priceOf(item) : "Listing unavailable"} <span className="meta-dot">·</span> {isBuyer ? "Seller" : "Buyer"}: {nameOf(otherPerson)}</span><small>Started {shortDate(transaction.created_at)}</small></div><div className="transaction-controls">{actions.map(({ key, text, style }) => <Button key={key} size="sm" variant={style ?? "default"} disabled={busy} onClick={() => { const reason = key === "cancel" ? window.prompt("Optional: share a reason with the other student") ?? "" : undefined; if (key !== "cancel" || reason !== null) onAction(transaction, key, reason); }}>{key === "complete" && <Check size={14} />}{text}</Button>)}</div></article>;
+    return <article className="transaction-row" key={transaction.id}><div className="transaction-thumb">{item?.photos?.[0] ? <TransactionImage path={item.photos[0]} label={item.title} /> : <ShoppingBag size={22} />}</div><div className="transaction-info"><div className="transaction-title-line"><strong>{item?.title ?? "CamFlea listing"}</strong><span className={`status-pill status-${transaction.status}`}>{transaction.status}</span></div><span>{item ? priceOf(item) : "Listing unavailable"} <span className="meta-dot">·</span> {isBuyer ? "Seller" : "Buyer"}: {nameOf(otherPerson)}</span><small>Started {shortDate(transaction.created_at)}</small></div><div className="transaction-controls">{actions.map((action) => <TransactionActionButton key={action.key} action={action} transaction={transaction} itemTitle={item?.title ?? "this listing"} busy={busy} onAction={onAction} />)}</div></article>;
   })}</div>;
+}
+
+function TransactionActionButton({ action, transaction, itemTitle, busy, onAction }: { action: { key: TransactionAction; text: string; style?: "default" | "outline" }; transaction: Transaction; itemTitle: string; busy: boolean; onAction: (transaction: Transaction, action: TransactionAction, reason?: string) => void }) {
+  const button = <Button size="sm" variant={action.style ?? "default"} disabled={busy} onClick={action.key === "cancel" ? undefined : () => onAction(transaction, action.key)}>{action.key === "complete" && <Check size={14} />}{action.text}</Button>;
+  if (action.key !== "cancel") return button;
+  return <ConfirmAction description={`Cancel the transaction for ${itemTitle}? This will stop the current purchase flow.`} confirmLabel="Cancel transaction" reasonLabel="Optional cancellation reason" onConfirm={(reason) => onAction(transaction, action.key, reason)}>{button}</ConfirmAction>;
 }
 
 function TransactionImage({ path, label }: { path: string; label: string }) {

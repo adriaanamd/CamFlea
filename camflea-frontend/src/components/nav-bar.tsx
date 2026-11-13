@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { LogOut } from "lucide-react";
 import { Link, useNavigate } from "@tanstack/react-router";
 
+import { ConfirmAction } from "@/components/confirm-action";
 import { Navigation } from "@/components/navigation";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -67,17 +68,18 @@ export function NavBar({ children, user, unreadCount, isStaff, isAdmin = false }
           <div className="camflea-sidebar-label">{isAdmin ? "ADMINISTRATION" : "MARKETPLACE"}</div>
           <Navigation unreadCount={unreadCount} isStaff={isStaff} isAdmin={isAdmin} />
           {user ? (
-            <button
-              type="button"
-              className="camflea-nav-link camflea-logout"
-              disabled={signingOut}
-              onClick={() => void handleLogout()}
+            <ConfirmAction
+              description="Log out of CamFlea? You can sign back in at any time."
+              confirmLabel="Log out"
+              onConfirm={() => handleLogout()}
             >
-              <span className="camflea-nav-icon">
-                <LogOut aria-hidden="true" size={18} strokeWidth={1.8} />
-              </span>
-              <span className="camflea-nav-text">{signingOut ? "Logging out…" : "Log out"}</span>
-            </button>
+              <button type="button" className="camflea-nav-link camflea-logout" disabled={signingOut}>
+                <span className="camflea-nav-icon">
+                  <LogOut aria-hidden="true" size={18} strokeWidth={1.8} />
+                </span>
+                <span className="camflea-nav-text">{signingOut ? "Logging out..." : "Log out"}</span>
+              </button>
+            </ConfirmAction>
           ) : null}
           <div className="camflea-sidebar-note">
             <strong>{isAdmin ? "Keep CamFlea safe." : "Buy a little closer."}</strong>

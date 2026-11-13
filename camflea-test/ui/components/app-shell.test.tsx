@@ -45,7 +45,11 @@ describe("AppShell", () => {
   it("restricts an admin to the admin dashboard navigation", () => {
     renderShell(true, true);
 
-    expect(screen.getByRole("link", { name: "Admin dashboard" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Dashboard" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "User Management" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Post & Item Management" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Transaction Monitoring" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Reports & Violations Center" })).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Browse" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Post item" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Transactions" })).not.toBeInTheDocument();
