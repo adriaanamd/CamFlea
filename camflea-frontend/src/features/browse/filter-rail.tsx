@@ -2,26 +2,30 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { browseCategories, browseConditions } from "@/features/browse/domain";
 
-const categoryLabel = (value: string) =>
-  value === "all" ? "All items" : value.replace(/\b\w/g, (letter) => letter.toUpperCase());
+const categoryLabel = (value: string) => (value === "all" ? "All items" : value);
 
 export function FilterRail({
   category,
   condition,
   sort,
+  availableOnly = false,
   onCategoryChange,
   onConditionChange,
   onSortChange,
+  onAvailableOnlyChange,
   onReset,
 }: {
   category: string;
   condition: string;
   sort: "newest" | "price-low" | "price-high";
+  availableOnly?: boolean;
   onCategoryChange: (value: string) => void;
   onConditionChange: (value: string) => void;
   onSortChange: (value: "newest" | "price-low" | "price-high") => void;
+  onAvailableOnlyChange?: (value: boolean) => void;
   onReset: () => void;
 }) {
+  const hasActiveFilters = category !== "all" || condition !== "all" || availableOnly;
   return (
     <section aria-label="Listing filters" className="filter-rail">
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2" aria-label="Categories">
@@ -51,7 +55,7 @@ export function FilterRail({
             <option value="all">All conditions</option>
             {browseConditions.map((value) => (
               <option key={value} value={value}>
-                {categoryLabel(value)}
+                {value}
               </option>
             ))}
           </select>
@@ -69,7 +73,18 @@ export function FilterRail({
             <option value="price-high">Price: high to low</option>
           </select>
         </div>
-        <Button type="button" variant="ghost" onClick={onReset}>
+        {onAvailableOnlyChange && (
+          <label className="!flex !min-w-0 cursor-pointer !flex-row items-center gap-2 self-center pt-4 text-sm">
+            <input
+              type="checkbox"
+              className="!min-h-0 h-4 w-4 accent-[var(--cf-green)]"
+              checked={availableOnly}
+              onChange={(event) => onAvailableOnlyChange(event.target.checked)}
+            />
+            Available only
+          </label>
+        )}
+        <Button type="button" variant="ghost" onClick={onReset} disabled={!hasActiveFilters}>
           Reset filters
         </Button>
       </div>

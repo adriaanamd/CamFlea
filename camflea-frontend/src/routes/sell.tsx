@@ -76,7 +76,10 @@ function SellPage() {
     <CamFleaPageShell>
       <ListingForm onSave={save} saving={saving} />
       {error && (
-        <p role="alert" className="mx-auto max-w-3xl px-4 pb-8">
+        <p
+          role="alert"
+          className="mx-auto mt-4 max-w-[1080px] rounded-xl border border-destructive/40 bg-card p-4 font-medium text-destructive"
+        >
           {error}
         </p>
       )}

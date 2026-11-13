@@ -1,16 +1,9 @@
 import { formatPeso } from "@/lib/camflea-workflow";
+import { LISTING_CATEGORIES, LISTING_CONDITIONS } from "@/lib/domain/listings";
 
-export const browseCategories = [
-  "books & school supplies",
-  "clothes & accessories",
-  "gadgets & electronics",
-  "instruments & recreations",
-  "crafted & collectibles",
-  "sports & fitness",
-  "other",
-] as const;
+export const browseCategories = LISTING_CATEGORIES;
 
-export const browseConditions = ["brand new", "gently used", "heavily used"] as const;
+export const browseConditions = LISTING_CONDITIONS;
 
 export type BrowseListing = {
   id: string;
@@ -25,6 +18,7 @@ export type BrowseListing = {
   price_max: number | null;
   created_at: string;
   seller_id?: string;
+  status?: string;
 };
 
 export type BrowseOptions = {
@@ -32,7 +26,10 @@ export type BrowseOptions = {
   category: string;
   condition: string;
   sort: "newest" | "price-low" | "price-high";
+  availableOnly?: boolean;
 };
+
+const same = (a: string, b: string) => a.trim().toLowerCase() === b.trim().toLowerCase();
 
 function comparablePrice(listing: BrowseListing) {
   if (listing.price_type === "range") return listing.price_min ?? Number.POSITIVE_INFINITY;
@@ -61,9 +58,12 @@ export function filterAndSortListings<T extends BrowseListing>(
       [listing.title, listing.description, listing.category, listing.meeting_place].some((value) =>
         value.toLocaleLowerCase().includes(query),
       );
-    const matchesCategory = options.category === "all" || listing.category === options.category;
-    const matchesCondition = options.condition === "all" || listing.condition === options.condition;
-    return matchesQuery && matchesCategory && matchesCondition;
+    const matchesCategory = options.category === "all" || same(listing.category, options.category);
+    const matchesCondition =
+      options.condition === "all" || same(listing.condition, options.condition);
+    const matchesStatus =
+      !options.availableOnly || !listing.status || listing.status === "available";
+    return matchesQuery && matchesCategory && matchesCondition && matchesStatus;
   });
 
   return filtered.sort((left, right) => {

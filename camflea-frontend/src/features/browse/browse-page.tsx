@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Search, X } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { filterAndSortListings, type BrowseListing, type BrowseOptions } from "./domain";
 import { FilterRail } from "./filter-rail";
@@ -73,30 +74,58 @@ export function BrowsePage({
           <p className="page-intro">Browse useful items listed by your campus community.</p>
         </div>
       </header>
-      <label className="browse-search">
-        <span>Search the campus marketplace</span>
-        <input
-          aria-label="Search listings"
-          type="search"
-          role="searchbox"
-          value={options.query}
-          onChange={(event) => setOptions({ ...options, query: event.target.value })}
-          placeholder="Search items, descriptions, or meet-up places"
-          className="browse-search-input"
-        />
-      </label>
+      <div className="browse-search">
+        <label htmlFor="browse-search-input">Search the campus marketplace</label>
+        <div className="relative">
+          <Search
+            aria-hidden="true"
+            size={18}
+            className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground"
+          />
+          <input
+            id="browse-search-input"
+            aria-label="Search listings"
+            type="search"
+            role="searchbox"
+            value={options.query}
+            onChange={(event) => setOptions({ ...options, query: event.target.value })}
+            placeholder="Search items, descriptions, or meet-up places"
+            className="browse-search-input !pl-10 !pr-10"
+          />
+          {options.query && (
+            <button
+              type="button"
+              aria-label="Clear search"
+              onClick={() => setOptions({ ...options, query: "" })}
+              className="absolute right-2 top-1/2 grid h-8 w-8 -translate-y-1/2 place-items-center rounded-full text-muted-foreground hover:bg-accent"
+            >
+              <X aria-hidden="true" size={16} />
+            </button>
+          )}
+        </div>
+      </div>
       <FilterRail
         category={options.category}
         condition={options.condition}
         sort={options.sort}
+        availableOnly={Boolean(options.availableOnly)}
         onCategoryChange={(category) => setOptions({ ...options, category })}
         onConditionChange={(condition) => setOptions({ ...options, condition })}
         onSortChange={(sort) => setOptions({ ...options, sort })}
-        onReset={() => setOptions({ ...options, category: "all", condition: "all" })}
+        onAvailableOnlyChange={(availableOnly) => setOptions({ ...options, availableOnly })}
+        onReset={() =>
+          setOptions({ ...options, category: "all", condition: "all", availableOnly: false })
+        }
       />
       <div className="catalog-bar browse-catalog-bar">
         <div>
-          <h2>Recently listed</h2>
+          <h2>
+            {options.query.trim()
+              ? `Results for “${options.query.trim()}”`
+              : options.category !== "all"
+                ? options.category
+                : "Recently listed"}
+          </h2>
           <span aria-live="polite">
             {results.length} {results.length === 1 ? "item" : "items"}
           </span>
@@ -104,7 +133,23 @@ export function BrowsePage({
       </div>
       {stale && <p role="status">Showing saved results while refreshing.</p>}
       {loading ? (
-        <p role="status">Loading listings…</p>
+        <div
+          className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3"
+          role="status"
+          aria-busy="true"
+        >
+          <span className="sr-only">Loading listings…</span>
+          {Array.from({ length: 6 }, (_, i) => (
+            <div key={i} className="overflow-hidden rounded-2xl border bg-card" aria-hidden="true">
+              <div className="aspect-[4/3] animate-pulse bg-muted" />
+              <div className="space-y-3 p-4">
+                <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+                <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
+              </div>
+            </div>
+          ))}
+        </div>
       ) : error ? (
         <div
           role="alert"
