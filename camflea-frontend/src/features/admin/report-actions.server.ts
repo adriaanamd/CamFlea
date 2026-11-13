@@ -18,7 +18,6 @@ async function assertStaffAccess(client: SupabaseClient<Database>, userId: strin
     throw new Error("Staff access required.");
   }
 }
-
 export async function listReportsForStaff(
   client: SupabaseClient<Database>,
   userId: string,
@@ -50,4 +49,3 @@ export async function reviewReportForStaff(
   if (error) throw new Error("Unable to mark report as reviewed.");
   return { id: reportId };
 }
-
