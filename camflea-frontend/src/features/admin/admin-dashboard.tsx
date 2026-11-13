@@ -23,7 +23,7 @@ import type {
 } from "@/features/admin/admin-dashboard-data";
 import { reviewAdminReport } from "@/features/admin/report-actions";
 
-type AdminTab = "dashboard" | "users" | "items" | "transactions" | "reports";
+export type AdminTab = "dashboard" | "users" | "items" | "transactions" | "reports";
 
 type LoadWorkspace = () => Promise<AdminWorkspaceData>;
 type WarnUser = (input: { userId: string; reason?: string }) => Promise<{ warningCount: number }>;
@@ -51,6 +51,7 @@ const defaultDeleteListing: DeleteListing = (input) => adminDeleteListing({ data
 const defaultReviewReport: ReviewReport = (input) => reviewAdminReport({ data: input });
 
 export function AdminDashboard({
+  tab: activeTab = "dashboard",
   loadWorkspace = defaultLoadWorkspace,
   warnUser = defaultWarnUser,
   setAccountStatus = defaultSetAccountStatus,
@@ -58,6 +59,7 @@ export function AdminDashboard({
   deleteListing = defaultDeleteListing,
   reviewReport = defaultReviewReport,
 }: {
+  tab?: AdminTab;
   loadWorkspace?: LoadWorkspace;
   warnUser?: WarnUser;
   setAccountStatus?: SetAccountStatus;
@@ -65,7 +67,6 @@ export function AdminDashboard({
   deleteListing?: DeleteListing;
   reviewReport?: ReviewReport;
 }) {
-  const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [workspace, setWorkspace] = useState<AdminWorkspaceData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -116,28 +117,6 @@ export function AdminDashboard({
         </Button>
       </header>
 
-      <div className="admin-tablist" role="tablist" aria-label="Admin dashboard sections">
-        {(
-          [
-            ["dashboard", "Dashboard"],
-            ["users", "User Management"],
-            ["items", "Post & Item Management"],
-            ["transactions", "Transaction Monitoring"],
-            ["reports", "Reports & Violations Center"],
-          ] as const
-        ).map(([value, label]) => (
-          <button
-            key={value}
-            type="button"
-            role="tab"
-            aria-selected={activeTab === value}
-            className={`admin-tab${activeTab === value ? " is-active" : ""}`}
-            onClick={() => setActiveTab(value)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
 
       {error ? (
         <div className="admin-alert" role="alert">
@@ -154,7 +133,7 @@ export function AdminDashboard({
       {!loading && !workspace && !error ? <p role="status">No admin data is available.</p> : null}
 
       {workspace ? (
-        <div role="tabpanel" className="admin-tabpanel">
+        <div className="admin-tabpanel">
           {activeTab === "dashboard" ? <DashboardOverview data={workspace} /> : null}
           {activeTab === "users" ? (
             <UserManagement users={workspace.users} onAction={runAction} warnUser={warnUser} setAccountStatus={setAccountStatus} />

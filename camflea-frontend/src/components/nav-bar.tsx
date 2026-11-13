@@ -1,8 +1,9 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 
 import { Navigation } from "@/components/navigation";
+import { supabase } from "@/integrations/supabase/client";
 
 export type NavBarProps = {
   children?: ReactNode;
@@ -15,6 +16,15 @@ export type NavBarProps = {
 /** The single marketplace chrome shared by every authenticated route. */
 export function NavBar({ children, user, unreadCount, isStaff, isAdmin = false }: NavBarProps) {
   const homePath = isAdmin ? "/admin" : "/browse";
+  const navigate = useNavigate();
+  const [signingOut, setSigningOut] = useState(false);
+
+  async function handleLogout() {
+    setSigningOut(true);
+    const { error } = await supabase.auth.signOut();
+    setSigningOut(false);
+    if (!error) await navigate({ to: "/auth", replace: true });
+  }
   return (
     <div className="camflea-shell">
       <a
@@ -37,10 +47,20 @@ export function NavBar({ children, user, unreadCount, isStaff, isAdmin = false }
         </div>
         <div className="camflea-header-account">
           {user ? (
-            <Link to={isAdmin ? "/admin" : "/profile"} className="camflea-account-chip">
-              <img src={user.profileImage || "/camflea-assets/avatar-placeholder.png"} alt="" />
-              <span>{user.firstName}</span>
-            </Link>
+            <>
+              <Link to={isAdmin ? "/admin" : "/profile"} className="camflea-account-chip">
+                <img src={user.profileImage || "/camflea-assets/avatar-placeholder.png"} alt="" />
+                <span>{user.firstName}</span>
+              </Link>
+              <button
+                type="button"
+                className="camflea-login-link"
+                disabled={signingOut}
+                onClick={() => void handleLogout()}
+              >
+                {signingOut ? "Logging out…" : "Log out"}
+              </button>
+            </>
           ) : (
             <Link to="/auth" className="camflea-login-link">
               Log in
