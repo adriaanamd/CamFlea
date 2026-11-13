@@ -7,10 +7,23 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
-    setupFiles: ["./src/test/setup.ts"],
-    include: ["src/**/*.{test,spec}.{ts,tsx}"],
+    setupFiles: [path.resolve(__dirname, "../camflea-test/setup.ts")],
+    include: ["../camflea-test/**/*.{test,spec}.{ts,tsx}"],
   },
   resolve: {
-    alias: { "@": path.resolve(__dirname, "./src") },
+    alias: {
+      "@": path.resolve(__dirname, "./src"),
+      "@testing-library/jest-dom/vitest": path.resolve(
+        __dirname,
+        "./node_modules/@testing-library/jest-dom/vitest.js",
+      ),
+      "@tanstack/react-query": path.resolve(__dirname, "./node_modules/@tanstack/react-query"),
+      "@tanstack/react-router": path.resolve(__dirname, "./node_modules/@tanstack/react-router"),
+    },
+  },
+  server: {
+    fs: {
+      allow: [path.resolve(__dirname, "..")],
+    },
   },
 });
