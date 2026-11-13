@@ -44,7 +44,7 @@ export function ListingDetail({
     <div className="listing-detail-page">
       <section aria-label="Listing photos" className="space-y-3">
         <Link
-          to="/"
+          to="/browse"
           className="inline-flex items-center gap-1 text-sm font-semibold text-primary hover:underline"
         >
           <ArrowLeft size={16} aria-hidden="true" /> Back to browse

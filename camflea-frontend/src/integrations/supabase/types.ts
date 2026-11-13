@@ -22,6 +22,7 @@ export type Database = {
           status: string
           updated_at: string
           user_id: string
+          warning_count: number
         }
         Insert: {
           changed_by?: string | null
@@ -30,6 +31,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id: string
+          warning_count?: number
         }
         Update: {
           changed_by?: string | null
@@ -38,6 +40,7 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+          warning_count?: number
         }
         Relationships: []
       }
@@ -108,6 +111,8 @@ export type Database = {
           created_at: string
           description: string
           id: string
+          is_pinned: boolean
+          is_verified: boolean
           meeting_place: string
           photos: string[]
           price: number | null
@@ -125,6 +130,8 @@ export type Database = {
           created_at?: string
           description: string
           id?: string
+          is_pinned?: boolean
+          is_verified?: boolean
           meeting_place: string
           photos?: string[]
           price?: number | null
@@ -142,6 +149,8 @@ export type Database = {
           created_at?: string
           description?: string
           id?: string
+          is_pinned?: boolean
+          is_verified?: boolean
           meeting_place?: string
           photos?: string[]
           price?: number | null
@@ -455,6 +464,42 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_delete_listing: {
+        Args: { _listing_id: string; _reason?: string }
+        Returns: undefined
+      }
+      admin_list_student_profiles: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          bio: string | null
+          created_at: string
+          email: string
+          first_name: string
+          is_banned: boolean
+          last_name: string
+          profile_image: string | null
+          program: string | null
+          reason: string | null
+          school: string | null
+          status: string
+          updated_at: string
+          user_id: string
+          warning_count: number
+          year_level: string | null
+        }[]
+      }
+      admin_set_account_status: {
+        Args: { _reason?: string; _status: string; _user_id: string }
+        Returns: undefined
+      }
+      admin_set_listing_flags: {
+        Args: { _is_pinned: boolean; _is_verified: boolean; _listing_id: string }
+        Returns: undefined
+      }
+      admin_warn_user: {
+        Args: { _reason?: string; _user_id: string }
+        Returns: number
+      }
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
       marketplace_add_to_cart: {
         Args: { _listing_id: string }

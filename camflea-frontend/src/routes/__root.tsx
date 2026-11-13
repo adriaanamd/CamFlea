@@ -21,7 +21,7 @@ function NotFoundComponent() {
         <strong className="camflea-state-code">404</strong>
         <h1>That page wandered off.</h1>
         <p>The page you’re looking for doesn’t exist or has moved.</p>
-        <Link to="/" className="camflea-state-action">
+        <Link to="/browse" className="camflea-state-action">
           Browse listings
         </Link>
       </section>
@@ -50,7 +50,7 @@ function ErrorComponent({ error, reset }: ErrorComponentProps) {
           >
             Try again
           </button>
-          <Link to="/" className="camflea-state-action camflea-state-action-secondary">
+          <Link to="/browse" className="camflea-state-action camflea-state-action-secondary">
             Browse listings
           </Link>
         </div>

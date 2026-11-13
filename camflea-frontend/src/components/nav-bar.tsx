@@ -9,10 +9,12 @@ export type NavBarProps = {
   user: { firstName: string; profileImage?: string | null } | null;
   unreadCount: number;
   isStaff: boolean;
+  isAdmin?: boolean;
 };
 
 /** The single marketplace chrome shared by every authenticated route. */
-export function NavBar({ children, user, unreadCount, isStaff }: NavBarProps) {
+export function NavBar({ children, user, unreadCount, isStaff, isAdmin = false }: NavBarProps) {
+  const homePath = isAdmin ? "/admin" : "/browse";
   return (
     <div className="camflea-shell">
       <a
@@ -22,7 +24,11 @@ export function NavBar({ children, user, unreadCount, isStaff }: NavBarProps) {
         Skip to content
       </a>
       <header className="camflea-header">
-        <Link to="/" className="camflea-brand" aria-label="CamFlea home">
+        <Link
+          to={homePath}
+          className="camflea-brand"
+          aria-label={isAdmin ? "CamFlea admin dashboard" : "CamFlea home"}
+        >
           <img src="/camflea-assets/logo-white.png" alt="CamFlea" />
         </Link>
         <div className="camflea-header-title">
@@ -31,7 +37,7 @@ export function NavBar({ children, user, unreadCount, isStaff }: NavBarProps) {
         </div>
         <div className="camflea-header-account">
           {user ? (
-            <Link to="/profile" className="camflea-account-chip">
+            <Link to={isAdmin ? "/admin" : "/profile"} className="camflea-account-chip">
               <img src={user.profileImage || "/camflea-assets/avatar-placeholder.png"} alt="" />
               <span>{user.firstName}</span>
             </Link>
@@ -43,12 +49,19 @@ export function NavBar({ children, user, unreadCount, isStaff }: NavBarProps) {
         </div>
       </header>
       <div className="camflea-layout">
-        <aside className="camflea-sidebar" aria-label="Marketplace navigation">
-          <div className="camflea-sidebar-label">MARKETPLACE</div>
-          <Navigation unreadCount={unreadCount} isStaff={isStaff} />
+        <aside
+          className="camflea-sidebar"
+          aria-label={isAdmin ? "Admin navigation" : "Marketplace navigation"}
+        >
+          <div className="camflea-sidebar-label">{isAdmin ? "ADMINISTRATION" : "MARKETPLACE"}</div>
+          <Navigation unreadCount={unreadCount} isStaff={isStaff} isAdmin={isAdmin} />
           <div className="camflea-sidebar-note">
-            <strong>Buy a little closer.</strong>
-            <span>Trade useful things with people from your campus.</span>
+            <strong>{isAdmin ? "Keep CamFlea safe." : "Buy a little closer."}</strong>
+            <span>
+              {isAdmin
+                ? "Review the campus marketplace from one secure workspace."
+                : "Trade useful things with people from your campus."}
+            </span>
           </div>
         </aside>
         <main id="main-content" tabIndex={-1} className="camflea-main">

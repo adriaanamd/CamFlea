@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { AdminReportQueue } from "@/features/admin/report-queue";
+import { AdminDashboard } from "@/features/admin/admin-dashboard";
 import { CamFleaPageShell } from "@/components/camflea-page-shell";
 
 export const Route = createFileRoute("/admin")({
@@ -17,8 +17,8 @@ export const Route = createFileRoute("/admin")({
     ],
   }),
   component: () => (
-    <CamFleaPageShell>
-      <AdminReportQueue />
+    <CamFleaPageShell mode="admin">
+      <AdminDashboard />
     </CamFleaPageShell>
   ),
 });

@@ -12,52 +12,111 @@ import { Link, useRouterState } from "@tanstack/react-router";
 type NavigationProps = {
   unreadCount: number;
   isStaff: boolean;
+  isAdmin?: boolean;
 };
 
-const primaryItems = [
-  { to: "/", label: "Browse", icon: Search },
-  { to: "/sell", label: "Post item", icon: Plus },
-  { to: "/transactions", label: "Transactions", icon: PackageCheck },
-  { to: "/messages", label: "Messages", icon: MessageCircle },
-  { to: "/notifications", label: "Notifications", icon: Bell },
-  { to: "/profile", label: "Profile", icon: CircleUserRound },
+const groups = [
+  {
+    label: "Marketplace",
+    items: [
+      { to: "/browse", label: "Browse", icon: Search },
+      { to: "/sell", label: "Post item", icon: Plus, cta: true },
+    ],
+  },
+  {
+    label: "Activity",
+    items: [
+      { to: "/transactions", label: "Transactions", icon: PackageCheck },
+      { to: "/messages", label: "Messages", icon: MessageCircle },
+      { to: "/notifications", label: "Notifications", icon: Bell },
+    ],
+  },
+  {
+    label: "Account",
+    items: [{ to: "/profile", label: "Profile", icon: CircleUserRound }],
+  },
 ] as const;
 
-export function Navigation({ unreadCount, isStaff }: NavigationProps) {
+export function Navigation({ unreadCount, isStaff, isAdmin = false }: NavigationProps) {
   const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isActiveRoute = (to: string) => (to === "/" ? pathname === "/" : pathname.startsWith(to));
+
+  if (isAdmin) {
+    return (
+      <nav aria-label="Primary navigation" className="camflea-nav">
+        <div className="camflea-nav-group" role="group" aria-label="Administration">
+          <span className="camflea-nav-group-label" aria-hidden="true">
+            Administration
+          </span>
+          <Link
+            to="/admin"
+            className={`camflea-nav-link camflea-nav-link-staff${isActiveRoute("/admin") ? " is-active" : ""}`}
+            aria-current={isActiveRoute("/admin") ? "page" : undefined}
+          >
+            <span className="camflea-nav-icon">
+              <LayoutDashboard aria-hidden="true" size={18} strokeWidth={1.8} />
+            </span>
+            <span className="camflea-nav-text">Admin dashboard</span>
+          </Link>
+        </div>
+      </nav>
+    );
+  }
 
   return (
     <nav aria-label="Primary navigation" className="camflea-nav">
-      <div className="camflea-nav-group">
-        {primaryItems.map(({ to, label, icon: Icon }) => {
-          const isActive = to === "/" ? pathname === "/" : pathname.startsWith(to);
-          return (
-            <Link
-              key={to}
-              to={to}
-              className={`camflea-nav-link${isActive ? " is-active" : ""}`}
-              aria-current={isActive ? "page" : undefined}
-            >
-              <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
-              <span>{label}</span>
-              {label === "Notifications" && unreadCount > 0 ? (
-                <span className="camflea-nav-count" aria-label={`${unreadCount} unread notifications`}>
-                  {unreadCount > 99 ? "99+" : unreadCount}
+      {groups.map((group) => (
+        <div key={group.label} className="camflea-nav-group" role="group" aria-label={group.label}>
+          <span className="camflea-nav-group-label" aria-hidden="true">
+            {group.label}
+          </span>
+          {group.items.map((item) => {
+            const { to, label, icon: Icon } = item;
+            const isActive = isActiveRoute(to);
+            const isCta = "cta" in item && item.cta;
+            return (
+              <Link
+                key={to}
+                to={to}
+                className={`camflea-nav-link${isActive ? " is-active" : ""}${isCta ? " camflea-nav-cta" : ""}`}
+                aria-current={isActive ? "page" : undefined}
+              >
+                <span className="camflea-nav-icon">
+                  <Icon aria-hidden="true" size={18} strokeWidth={1.8} />
+                  {label === "Notifications" && unreadCount > 0 ? (
+                    <span className="camflea-nav-dot" aria-hidden="true" />
+                  ) : null}
                 </span>
-              ) : null}
-            </Link>
-          );
-        })}
-      </div>
+                <span className="camflea-nav-text">{label}</span>
+                {label === "Notifications" && unreadCount > 0 ? (
+                  <span
+                    className="camflea-nav-count"
+                    aria-label={`${unreadCount} unread notifications`}
+                  >
+                    {unreadCount > 99 ? "99+" : unreadCount}
+                  </span>
+                ) : null}
+              </Link>
+            );
+          })}
+        </div>
+      ))}
       {isStaff ? (
-        <Link
-          to="/admin"
-          className={`camflea-nav-link camflea-nav-link-staff${pathname.startsWith("/admin") ? " is-active" : ""}`}
-          aria-current={pathname.startsWith("/admin") ? "page" : undefined}
-        >
-          <LayoutDashboard aria-hidden="true" size={18} strokeWidth={1.8} />
-          <span>Admin</span>
-        </Link>
+        <div className="camflea-nav-group" role="group" aria-label="Staff">
+          <span className="camflea-nav-group-label" aria-hidden="true">
+            Staff
+          </span>
+          <Link
+            to="/admin"
+            className={`camflea-nav-link camflea-nav-link-staff${isActiveRoute("/admin") ? " is-active" : ""}`}
+            aria-current={isActiveRoute("/admin") ? "page" : undefined}
+          >
+            <span className="camflea-nav-icon">
+              <LayoutDashboard aria-hidden="true" size={18} strokeWidth={1.8} />
+            </span>
+            <span className="camflea-nav-text">Admin</span>
+          </Link>
+        </div>
       ) : null}
     </nav>
   );

@@ -37,3 +37,7 @@ dist-ssr
 
 # legacy
 camflea-legacy/
+# Local Supabase seed credentials
+camflea-supabase/seed-credentials.local.md
+# Supabase CLI local state
+**/supabase/.temp/

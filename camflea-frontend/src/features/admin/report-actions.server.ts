@@ -40,11 +40,12 @@ export async function reviewReportForStaff(
   client: SupabaseClient<Database>,
   userId: string,
   reportId: string,
+  status: "open" | "reviewed" | "dismissed" = "reviewed",
 ) {
   await assertStaffAccess(client, userId);
   const { error } = await client.rpc("marketplace_review_report", {
     _report_id: reportId,
-    _status: "reviewed",
+    _status: status,
   });
   if (error) throw new Error("Unable to mark report as reviewed.");
   return { id: reportId };

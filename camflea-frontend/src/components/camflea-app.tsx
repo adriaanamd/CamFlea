@@ -34,7 +34,7 @@ import { authInputSchema } from "@/lib/validation/auth";
 import { updateOwnProfile } from "@/server/profile";
 
 type Listing = Tables<"marketplace_listings">;
-type Profile = Tables<"student_profiles">;
+type Profile = Omit<Tables<"student_profiles">, "email">;
 type Transaction = Tables<"marketplace_transactions">;
 type Notification = Tables<"marketplace_notifications">;
 type Message = Tables<"marketplace_messages">;
@@ -43,6 +43,8 @@ type RouteView = "browse" | "auth" | "sell" | "transactions" | "messages" | "not
 
 const categories = ["All items", "Books & School Supplies", "Clothes & Accessories", "Gadgets & Electronics", "Sports & Outdoors", "Crafted & Collectibles", "Other"];
 const conditions = ["New", "Like new", "Good", "Fair"];
+const profileProjection =
+  "user_id,first_name,last_name,school,program,year_level,profile_image,bio,is_banned,created_at,updated_at";
 function nameOf(profile?: Profile | null) {
   if (!profile) return "Campus student";
   return [profile.first_name, profile.last_name].filter(Boolean).join(" ") || "Campus student";
@@ -95,7 +97,7 @@ export function CamFleaApp({ view }: { view: RouteView }) {
 
     if (id) {
       const [profileResult, txResult, notificationResult, messageResult] = await Promise.all([
-        supabase.from("student_profiles").select("*").eq("user_id", id).maybeSingle(),
+        supabase.from("student_profiles").select(profileProjection).eq("user_id", id).maybeSingle(),
         supabase.from("marketplace_transactions").select("*").order("created_at", { ascending: false }),
         supabase.from("marketplace_notifications").select("*").order("created_at", { ascending: false }).limit(40),
         supabase.from("marketplace_messages").select("*").order("created_at", { ascending: true }).limit(200),
@@ -117,7 +119,7 @@ export function CamFleaApp({ view }: { view: RouteView }) {
       linkedIds.add(id);
       const profileResultAll = await supabase
         .from("student_profiles")
-        .select("user_id, email, first_name, last_name, school, program, year_level, profile_image, bio, is_banned, created_at, updated_at")
+        .select(profileProjection)
         .in("user_id", [...linkedIds]);
       const profileMap = Object.fromEntries((profileResultAll.data ?? []).map((row) => [row.user_id, row]));
       setProfiles(profileMap);
@@ -184,6 +186,24 @@ export function CamFleaApp({ view }: { view: RouteView }) {
     return false;
   }
 
+  async function navigateAfterAuth() {
+    const { data: authData } = await supabase.auth.getUser();
+    const id = authData.user?.id;
+    if (!id) {
+      await navigate({ to: "/browse" });
+      return;
+    }
+    const { data: isAdmin, error } = await supabase.rpc("has_role", {
+      _user_id: id,
+      _role: "admin",
+    });
+    if (error) {
+      toast.error("Your account is signed in, but administrator access is still being verified.");
+      return;
+    }
+    await navigate({ to: isAdmin ? "/admin" : "/browse" });
+  }
+
   async function handleAuth(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
@@ -207,7 +227,7 @@ export function CamFleaApp({ view }: { view: RouteView }) {
       if (error) toast.error(error.message);
       else {
         toast.success("Welcome back to CamFlea");
-        await navigate({ to: "/" });
+        await navigateAfterAuth();
       }
     } else {
       const metadata = {
@@ -223,7 +243,7 @@ export function CamFleaApp({ view }: { view: RouteView }) {
       else if (!data.session) toast.success("Check your email to confirm your student account.");
       else {
         toast.success("Your student account is ready");
-        await navigate({ to: "/" });
+        await navigateAfterAuth();
       }
     }
     setBusy(false);
@@ -329,7 +349,7 @@ export function CamFleaApp({ view }: { view: RouteView }) {
       toast.success("Your item is now listed");
       setDraftFiles([]);
       await loadData();
-      await navigate({ to: "/" });
+      await navigate({ to: "/browse" });
     }
     setBusy(false);
   }

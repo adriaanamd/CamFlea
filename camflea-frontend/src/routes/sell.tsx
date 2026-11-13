@@ -57,7 +57,7 @@ function SellPage() {
       if (uploadedPhotos.length) {
         await attachListingPhotos({ data: { id: listingId, photos: uploadedPhotos } });
       }
-      window.location.assign("/");
+      window.location.assign("/browse");
     } catch {
       if (uploadedPhotos.length) {
         await supabase.storage

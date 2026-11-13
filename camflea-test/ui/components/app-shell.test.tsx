@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import { AppShell } from "@/components/app-shell";
 import { routeTree } from "@/routeTree.gen";
 
-function renderShell(isStaff: boolean) {
+function renderShell(isStaff: boolean, isAdmin = false) {
   const router = createRouter({
     routeTree,
     context: { queryClient: new QueryClient() },
@@ -15,7 +15,7 @@ function renderShell(isStaff: boolean) {
 
   return render(
     <RouterContextProvider router={router}>
-      <AppShell user={{ firstName: "Ari" }} unreadCount={2} isStaff={isStaff}>
+      <AppShell user={{ firstName: "Ari" }} unreadCount={2} isStaff={isStaff} isAdmin={isAdmin}>
         <main>Content</main>
       </AppShell>
     </RouterContextProvider>,
@@ -40,5 +40,16 @@ describe("AppShell", () => {
     renderShell(false);
 
     expect(screen.queryByRole("link", { name: "Admin" })).not.toBeInTheDocument();
+  });
+
+  it("restricts an admin to the admin dashboard navigation", () => {
+    renderShell(true, true);
+
+    expect(screen.getByRole("link", { name: "Admin dashboard" })).toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Browse" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Post item" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Transactions" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Messages" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Profile" })).not.toBeInTheDocument();
   });
 });

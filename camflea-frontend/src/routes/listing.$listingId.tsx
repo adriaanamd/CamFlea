@@ -79,7 +79,7 @@ function ListingRoute() {
           title="Listing unavailable"
           copy="This listing may have been removed or is not visible."
           action={
-            <Link to="/" className="font-semibold text-primary underline">
+            <Link to="/browse" className="font-semibold text-primary underline">
               Browse listings
             </Link>
           }

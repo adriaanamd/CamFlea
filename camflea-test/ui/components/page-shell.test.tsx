@@ -10,20 +10,29 @@ const shellData: ShellData = {
   user: { firstName: "Mina", profileImage: null },
   unreadCount: 3,
   isStaff: true,
+  isAdmin: false,
 };
 
 describe("CamFleaPageShell", () => {
-  function renderPage(load: () => Promise<ShellData>, children: ReactNode) {
+  function renderPage(
+    load: () => Promise<ShellData>,
+    children: ReactNode,
+    initialEntries = ["/"],
+    mode: "marketplace" | "admin" = "marketplace",
+  ) {
     const router = createRouter({
       routeTree,
       context: { queryClient: new QueryClient() },
-      history: createMemoryHistory({ initialEntries: ["/"] }),
+      history: createMemoryHistory({ initialEntries }),
     });
-    return render(
+    render(
       <RouterContextProvider router={router}>
-        <CamFleaPageShell load={load}>{children}</CamFleaPageShell>
+        <CamFleaPageShell load={load} mode={mode}>
+          {children}
+        </CamFleaPageShell>
       </RouterContextProvider>,
     );
+    return router;
   }
 
   it("keeps feature pages inside the shared navigation chrome", async () => {
@@ -48,5 +57,43 @@ describe("CamFleaPageShell", () => {
 
     await waitFor(() => expect(screen.getByRole("heading", { name: "Post an item" })).toBeVisible());
     expect(screen.getByText("Log in")).toBeVisible();
+  });
+
+  it("redirects an admin away from marketplace routes", async () => {
+    const router = renderPage(
+      vi.fn<() => Promise<ShellData>>().mockResolvedValue({ ...shellData, isAdmin: true }),
+      <h1>Browse items</h1>,
+      ["/browse"],
+    );
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/admin"));
+  });
+
+  it("redirects a student away from the admin route", async () => {
+    const router = renderPage(
+      vi.fn<() => Promise<ShellData>>().mockResolvedValue({ ...shellData, isStaff: false }),
+      <h1>Admin dashboard</h1>,
+      ["/admin"],
+      "admin",
+    );
+
+    await waitFor(() => expect(router.state.location.pathname).toBe("/browse"));
+  });
+
+  it("does not redirect an admin while role verification is unavailable", async () => {
+    const router = renderPage(
+      vi.fn<() => Promise<ShellData>>().mockResolvedValue({
+        ...shellData,
+        isStaff: false,
+        isAdmin: false,
+        roleCheckFailed: true,
+      }),
+      <h1>Admin dashboard</h1>,
+      ["/admin"],
+      "admin",
+    );
+
+    await waitFor(() => expect(screen.getByRole("alert")).toBeVisible());
+    expect(router.state.location.pathname).toBe("/admin");
   });
 });
