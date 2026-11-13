@@ -20,6 +20,8 @@ export default defineConfig({
       "@testing-library/react": path.resolve(__dirname, "./node_modules/@testing-library/react"),
       "@tanstack/react-query": path.resolve(__dirname, "./node_modules/@tanstack/react-query"),
       "@tanstack/react-router": path.resolve(__dirname, "./node_modules/@tanstack/react-router"),
+      react: path.resolve(__dirname, "./node_modules/react"),
+      "react-dom": path.resolve(__dirname, "./node_modules/react-dom"),
     },
   },
   server: {
