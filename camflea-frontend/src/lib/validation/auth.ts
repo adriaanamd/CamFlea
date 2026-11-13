@@ -10,7 +10,7 @@ const campusEmail = z
 
 const matchingPasswords = <T extends z.ZodRawShape>(schema: z.ZodObject<T>) =>
   schema.superRefine((value, context) => {
-    if (value.password !== value.confirmPassword) {
+    if (value["password"] !== value["confirmPassword"]) {
       context.addIssue({ code: z.ZodIssueCode.custom, path: ["confirmPassword"], message: "Passwords must match." });
     }
   });

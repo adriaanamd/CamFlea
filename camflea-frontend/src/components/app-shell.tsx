@@ -16,9 +16,12 @@ export function AppShell({ children, user, unreadCount, isStaff }: AppShellProps
     <div className="camflea-shell">
       <header className="camflea-header">
         <Link to="/" className="camflea-brand" aria-label="CamFlea home">
-          <img src="/camflea-assets/logo.png" alt="CamFlea" />
+          <img src="/camflea-assets/logo-white.png" alt="CamFlea" />
         </Link>
-        <Navigation unreadCount={unreadCount} isStaff={isStaff} />
+        <div className="camflea-header-title">
+          <span>Campus marketplace</span>
+          <strong>Good finds stay local.</strong>
+        </div>
         <div className="camflea-header-account">
           {user ? (
             <Link to="/profile" className="camflea-account-chip">
@@ -32,7 +35,17 @@ export function AppShell({ children, user, unreadCount, isStaff }: AppShellProps
           )}
         </div>
       </header>
-      <main className="camflea-main">{children}</main>
+      <div className="camflea-layout">
+        <aside className="camflea-sidebar" aria-label="Marketplace navigation">
+          <div className="camflea-sidebar-label">MARKETPLACE</div>
+          <Navigation unreadCount={unreadCount} isStaff={isStaff} />
+          <div className="camflea-sidebar-note">
+            <strong>Buy a little closer.</strong>
+            <span>Trade useful things with people from your campus.</span>
+          </div>
+        </aside>
+        <main className="camflea-main">{children}</main>
+      </div>
     </div>
   );
 }

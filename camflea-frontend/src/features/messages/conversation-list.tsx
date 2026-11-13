@@ -4,7 +4,7 @@ type Message = Tables<"marketplace_messages">;
 export type Conversation = {
   participantId: string;
   name: string;
-  listingTitle?: string;
+  listingTitle?: string | undefined;
   messages: Message[];
 };
 export function ConversationList({
@@ -17,7 +17,7 @@ export function ConversationList({
   onSelect: (id: string) => void;
 }) {
   return (
-    <nav aria-label="Conversations" className="rounded-2xl border bg-card p-3">
+    <nav aria-label="Conversations" className="conversation-list-panel">
       <h2 className="px-2 py-2 font-semibold">Conversations</h2>
       {conversations.length ? (
         conversations.map((conversation) => (

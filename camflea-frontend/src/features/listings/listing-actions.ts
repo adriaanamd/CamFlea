@@ -42,6 +42,25 @@ export const createListing = createServerFn({ method: "POST" })
     if (error) throw new Error("Could not create listing.");
     return listing;
   });
+const listingPhotosSchema = z.object({
+  id: listingId,
+  photos: z.array(z.string().trim().min(1).max(500)).max(5),
+});
+export const attachListingPhotos = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .validator(listingPhotosSchema)
+  .handler(async ({ data, context }) => {
+    if (data.photos.some((path) => !path.startsWith(`${context.userId}/`))) {
+      throw new Error("Listing photo path is not owned by the authenticated user.");
+    }
+    const { error } = await context.supabase
+      .from("marketplace_listings")
+      .update({ photos: data.photos })
+      .eq("id", data.id)
+      .eq("seller_id", context.userId);
+    if (error) throw new Error("Could not attach listing photos.");
+    return { success: true };
+  });
 export const updateListing = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .validator(z.object({ id: listingId, input: listingInputSchema }))

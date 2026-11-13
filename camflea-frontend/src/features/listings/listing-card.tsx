@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import type { Tables } from "@/integrations/supabase/types";
+import { supabase } from "@/integrations/supabase/client";
 import { formatListingPrice } from "@/features/browse/domain";
 export function ListingCard({
   listing,
@@ -7,6 +9,23 @@ export function ListingCard({
   listing: Tables<"marketplace_listings">;
   seller?: string | undefined;
 }) {
+  const path = listing.photos[0];
+  const [image, setImage] = useState<string | null>(
+    path && /^https?:\/\//.test(path) ? path : null,
+  );
+  useEffect(() => {
+    if (!path || /^https?:\/\//.test(path)) return;
+    let active = true;
+    void supabase.storage
+      .from("camflea-listings")
+      .createSignedUrl(path, 3600)
+      .then(({ data }) => {
+        if (active) setImage(data?.signedUrl ?? null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [path]);
   return (
     <article className="overflow-hidden rounded-2xl border bg-card shadow-sm">
       <a
@@ -14,9 +33,9 @@ export function ListingCard({
         className="block focus-visible:outline focus-visible:outline-2"
       >
         <div className="aspect-[4/3] bg-muted">
-          {listing.photos[0] ? (
+          {image ? (
             <img
-              src={listing.photos[0]}
+              src={image}
               alt={listing.title}
               className="h-full w-full object-cover"
             />

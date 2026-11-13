@@ -41,12 +41,18 @@ export function MessagePage() {
     }
     return [...map].map(([participantId, messages]) => {
       const listingId = [...messages].reverse().find((row) => row.listing_id)?.listing_id;
-      return {
+      const conversation: Conversation = {
         participantId,
         name: profiles[participantId] ?? "Campus student",
-        listingTitle: listingId ? (listingTitles[listingId] ?? "Listing unavailable") : undefined,
         messages,
-      } satisfies Conversation;
+      };
+      if (listingId) {
+        return {
+          ...conversation,
+          listingTitle: listingTitles[listingId] ?? "Listing unavailable",
+        };
+      }
+      return conversation;
     });
   }, [rows, userId, profiles, listingTitles]);
   useEffect(() => {
@@ -58,7 +64,9 @@ export function MessagePage() {
     undefined;
   const refreshThread = useCallback(async () => {
     if (!selected || !userId) return;
-    const thread = await listThread({ data: { participantId: selected, listingId } });
+    const thread = await listThread({
+      data: listingId ? { participantId: selected, listingId } : { participantId: selected },
+    });
     setRows((current) => [
       ...current.filter((row) => !thread.some((item) => item.id === row.id)),
       ...thread,
@@ -128,10 +136,13 @@ export function MessagePage() {
       );
   }, [rows]);
   return (
-    <main className="mx-auto max-w-6xl space-y-4 p-4">
-      <header>
-        <h1 className="text-3xl font-semibold">Messages</h1>
-        <p className="text-muted-foreground">Private conversations about CamFlea listings.</p>
+    <main className="messages-page content-view">
+      <header className="page-heading content-heading">
+        <div>
+          <p className="eyebrow">BETTER DEALS START WITH A NOTE</p>
+          <h1>Messages</h1>
+          <p className="page-intro">Ask a question, find a meet-up time, make it easy.</p>
+        </div>
       </header>
       {error && (
         <div role="alert">
@@ -139,7 +150,7 @@ export function MessagePage() {
           <button onClick={() => void reload()}>Retry</button>
         </div>
       )}
-      <div className="grid gap-4 md:grid-cols-[18rem_1fr]">
+      <div className="message-grid">
         <div className={mobileThread && selected ? "hidden md:block" : "block"}>
           <ConversationList
             conversations={conversations}
@@ -154,7 +165,7 @@ export function MessagePage() {
           <div className={mobileThread ? "block" : "hidden md:block"}>
             <MessageThread
               participantName={conversation.name}
-              listingTitle={conversation.listingTitle}
+              {...(conversation.listingTitle ? { listingTitle: conversation.listingTitle } : {})}
               messages={conversation.messages}
               onBack={() => setMobileThread(false)}
               onSend={submit}

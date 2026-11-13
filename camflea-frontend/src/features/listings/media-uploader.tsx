@@ -3,13 +3,16 @@ const MAX_BYTES = 5 * 1024 * 1024;
 export function MediaUploader({
   photos,
   onChange,
+  onFilesChange,
   error,
 }: {
   photos: string[];
   onChange: (photos: string[]) => void;
+  onFilesChange?: (files: File[]) => void;
   error?: string | undefined;
 }) {
   const [message, setMessage] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   return (
     <div className="space-y-2">
       <label className="block text-sm font-medium" htmlFor="listing-photos">
@@ -21,12 +24,12 @@ export function MediaUploader({
         accept="image/jpeg,image/png,image/webp"
         multiple
         onChange={(event) => {
-          const files = Array.from(event.target.files ?? []);
-          if (photos.length + files.length > 5) {
+          const inputFiles = Array.from(event.target.files ?? []);
+          if (photos.length + inputFiles.length > 5) {
             setMessage("You can add up to five photos.");
             return;
           }
-          const invalid = files.find(
+          const invalid = inputFiles.find(
             (file) =>
               !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
               file.size > MAX_BYTES,
@@ -36,7 +39,10 @@ export function MediaUploader({
             return;
           }
           setMessage("");
-          onChange([...photos, ...files.map((file) => URL.createObjectURL(file))]);
+          const nextFiles = [...selectedFiles, ...inputFiles];
+          setSelectedFiles(nextFiles);
+          onFilesChange?.(nextFiles);
+          onChange([...photos, ...inputFiles.map((file) => URL.createObjectURL(file))]);
         }}
       />
       <div className="flex flex-wrap gap-2">
@@ -51,7 +57,13 @@ export function MediaUploader({
               type="button"
               aria-label={`Remove photo ${index + 1}`}
               className="absolute -right-1 -top-1 rounded-full bg-background px-1"
-              onClick={() => onChange(photos.filter((_, i) => i !== index))}
+              onClick={() => {
+                const nextPhotos = photos.filter((_, i) => i !== index);
+                const nextFiles = selectedFiles.filter((_, i) => i !== index);
+                setSelectedFiles(nextFiles);
+                onFilesChange?.(nextFiles);
+                onChange(nextPhotos);
+              }}
             >
               ×
             </button>

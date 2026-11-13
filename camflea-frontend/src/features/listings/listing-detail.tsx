@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { Tables } from "@/integrations/supabase/types";
 import { formatListingPrice } from "@/features/browse/domain";
+import { supabase } from "@/integrations/supabase/client";
 export function ListingDetail({
   listing,
   seller = "Campus student",
@@ -15,15 +16,35 @@ export function ListingDetail({
   onReport?: () => void;
 }) {
   const [selected, setSelected] = useState(0);
+  const selectedPhoto = listing.photos[selected];
+  const [selectedUrl, setSelectedUrl] = useState<string | null>(
+    selectedPhoto && /^https?:\/\//.test(selectedPhoto) ? selectedPhoto : null,
+  );
+  useEffect(() => {
+    if (!selectedPhoto || /^https?:\/\//.test(selectedPhoto)) {
+      setSelectedUrl(selectedPhoto ?? null);
+      return;
+    }
+    let active = true;
+    void supabase.storage
+      .from("camflea-listings")
+      .createSignedUrl(selectedPhoto, 3600)
+      .then(({ data }) => {
+        if (active) setSelectedUrl(data?.signedUrl ?? null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [selectedPhoto]);
   const available = listing.status === "available";
   return (
-    <main className="mx-auto grid max-w-6xl gap-8 px-4 py-8 md:grid-cols-2">
+    <main className="listing-detail-page">
       <section aria-label="Listing photos" className="space-y-3">
         <div className="aspect-square overflow-hidden rounded-3xl bg-muted">
-          {listing.photos[selected] ? (
+          {selectedUrl ? (
             <img
               className="h-full w-full object-cover"
-              src={listing.photos[selected]}
+              src={selectedUrl}
               alt={`${listing.title} photo ${selected + 1}`}
             />
           ) : (

@@ -23,7 +23,7 @@ export function FilterRail({
   onReset: () => void;
 }) {
   return (
-    <section aria-label="Listing filters" className="space-y-4">
+    <section aria-label="Listing filters" className="filter-rail">
       <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2" aria-label="Categories">
         {["all", ...browseCategories].map((value) => (
           <Button

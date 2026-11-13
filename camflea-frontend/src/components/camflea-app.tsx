@@ -33,6 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { canTakeTransactionAction, formatPeso, type TransactionAction } from "@/lib/camflea-workflow";
+import { authInputSchema } from "@/lib/validation/auth";
 
 type Listing = Tables<"marketplace_listings">;
 type Profile = Tables<"student_profiles">;
@@ -72,6 +73,7 @@ export function CamFleaApp({ view }: { view: RouteView }) {
   const navigate = useNavigate();
   const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isStaff, setIsStaff] = useState(false);
   const [profiles, setProfiles] = useState<Record<string, Profile>>({});
   const [listings, setListings] = useState<Listing[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -102,12 +104,15 @@ export function CamFleaApp({ view }: { view: RouteView }) {
     setListings(availableListings ?? []);
 
     if (id) {
-      const [profileResult, txResult, notificationResult, messageResult] = await Promise.all([
+      const [profileResult, txResult, notificationResult, messageResult, adminRole, moderatorRole] = await Promise.all([
         supabase.from("student_profiles").select("*").eq("user_id", id).maybeSingle(),
         supabase.from("marketplace_transactions").select("*").order("created_at", { ascending: false }),
         supabase.from("marketplace_notifications").select("*").order("created_at", { ascending: false }).limit(40),
         supabase.from("marketplace_messages").select("*").order("created_at", { ascending: true }).limit(200),
+        supabase.rpc("has_role", { _user_id: id, _role: "admin" }),
+        supabase.rpc("has_role", { _user_id: id, _role: "moderator" }),
       ]);
+      setIsStaff(Boolean(adminRole.data || moderatorRole.data));
       setProfile(profileResult.data ?? null);
       setTransactions(txResult.data ?? []);
       setNotifications(notificationResult.data ?? []);
@@ -125,7 +130,7 @@ export function CamFleaApp({ view }: { view: RouteView }) {
       linkedIds.add(id);
       const profileResultAll = await supabase
         .from("student_profiles")
-        .select("user_id, first_name, last_name, school, program, year_level, profile_image, bio, is_banned, created_at, updated_at")
+        .select("user_id, email, first_name, last_name, school, program, year_level, profile_image, bio, is_banned, created_at, updated_at")
         .in("user_id", [...linkedIds]);
       const profileMap = Object.fromEntries((profileResultAll.data ?? []).map((row) => [row.user_id, row]));
       setProfiles(profileMap);
@@ -136,6 +141,7 @@ export function CamFleaApp({ view }: { view: RouteView }) {
       setNotifications([]);
       setMessages([]);
       setProfiles({});
+      setIsStaff(false);
     }
     setLoading(false);
   }, []);
@@ -185,7 +191,6 @@ export function CamFleaApp({ view }: { view: RouteView }) {
 
   const unreadCount = notifications.filter((notification) => !notification.is_read).length;
   const cartCount = transactions.filter((transaction) => transaction.buyer_id === userId && transaction.status === "cart").length;
-  const isStaff = Boolean(profiles[userId ?? ""] && false);
 
   async function requireSignIn(message = "Sign in to continue") {
     if (userId) return true;
@@ -199,6 +204,18 @@ export function CamFleaApp({ view }: { view: RouteView }) {
     const form = new FormData(event.currentTarget);
     const email = String(form.get("email") ?? "").trim();
     const password = String(form.get("password") ?? "");
+    const parsed = authMode === "sign-in"
+      ? authInputSchema.signin.safeParse({ email, password })
+      : authInputSchema.signup.safeParse({
+          email,
+          password,
+          firstName: String(form.get("first_name") ?? "").trim(),
+          lastName: String(form.get("last_name") ?? "").trim(),
+        });
+    if (!parsed.success) {
+      toast.error(parsed.error.issues[0]?.message ?? "Check your account details.");
+      return;
+    }
     setBusy(true);
     if (authMode === "sign-in") {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
@@ -236,7 +253,10 @@ export function CamFleaApp({ view }: { view: RouteView }) {
 
   async function addToCart(listing: Listing) {
     if (!(await requireSignIn())) return;
-    if (listing.seller_id === userId) return toast.error("You can’t add your own listing");
+    if (listing.seller_id === userId) {
+      toast.error("You can’t add your own listing");
+      return;
+    }
     const { error } = await supabase.rpc("marketplace_add_to_cart", { _listing_id: listing.id });
     if (error) toast.error(error.message);
     else {
@@ -246,9 +266,13 @@ export function CamFleaApp({ view }: { view: RouteView }) {
   }
 
   async function transactionAction(transaction: Transaction, action: TransactionAction, reason?: string) {
-    if (!userId) return toast.error("Sign in to continue");
+    if (!userId) {
+      toast.error("Sign in to continue");
+      return;
+    }
     if (!canTakeTransactionAction(transaction.status as Parameters<typeof canTakeTransactionAction>[0], action)) {
-      return toast.error("That transaction step is no longer available");
+      toast.error("That transaction step is no longer available");
+      return;
     }
     setBusy(true);
     if (action === "request") {
@@ -256,11 +280,12 @@ export function CamFleaApp({ view }: { view: RouteView }) {
       if (error) toast.error(error.message);
       else toast.success("Purchase request sent to the seller");
     } else {
-      const { error } = await supabase.rpc("marketplace_transition_transaction", {
-        _transaction_id: transaction.id,
-        _action: action,
-        _reason: reason ?? null,
-      });
+      const { error } = await supabase.rpc(
+        "marketplace_transition_transaction",
+        reason
+          ? { _transaction_id: transaction.id, _action: action, _reason: reason }
+          : { _transaction_id: transaction.id, _action: action },
+      );
       if (error) toast.error(error.message);
       else toast.success(action === "complete" ? "Sale completed" : "Transaction updated");
     }
@@ -360,7 +385,9 @@ export function CamFleaApp({ view }: { view: RouteView }) {
   }
 
   async function markNotificationRead(notification: Notification) {
-    const { error } = await supabase.from("marketplace_notifications").update({ is_read: true }).eq("id", notification.id);
+    const { error } = await supabase.rpc("marketplace_mark_notification_read", {
+      _notification_id: notification.id,
+    });
     if (!error) await loadData();
   }
 
@@ -464,7 +491,7 @@ function PageTitle({ eyebrow, title, subtitle }: { eyebrow: string; title: strin
   return <div className="page-heading content-heading"><div><p className="eyebrow">{eyebrow}</p><h1>{title}</h1><p className="page-intro">{subtitle}</p></div></div>;
 }
 
-function ListingCard({ listing, seller, onOpen, onCart, onFavorite }: { listing: Listing; seller?: Profile; onOpen: () => void; onCart: () => void; onFavorite: () => void }) {
+function ListingCard({ listing, seller, onOpen, onCart, onFavorite }: { listing: Listing; seller?: Profile | undefined; onOpen: () => void; onCart: () => void; onFavorite: () => void }) {
   const [image, setImage] = useState<string | null>(null);
   useEffect(() => {
     let active = true;
@@ -477,7 +504,7 @@ function ListingCard({ listing, seller, onOpen, onCart, onFavorite }: { listing:
   return <article className="listing-card"><button className="listing-image-button" onClick={onOpen} aria-label={`View ${listing.title}`}><div className={`listing-image ${image ? "has-image" : ""}`}>{image ? <img src={image} alt={listing.title} /> : <span className="image-placeholder"><Tag size={25} /></span>}<span className="condition-pill">{listing.condition}</span></div></button><div className="listing-card-body"><button className="listing-name" onClick={onOpen}>{listing.title}</button><div className="listing-price">{priceOf(listing)}</div><div className="listing-card-meta"><span>{listing.category.split(" & ")[0]}</span><span className="meta-dot">·</span><span>{shortDate(listing.created_at)}</span></div><div className="seller-line"><img src={seller?.profile_image || "/camflea-assets/avatar-placeholder.png"} alt="" /><span>{nameOf(seller)}</span><button className="favorite-button" onClick={onFavorite} aria-label="Save listing"><Heart size={16} /></button></div><Button size="sm" variant="outline" className="listing-action" onClick={onCart}><ShoppingCart size={15} /> Add to cart</Button></div></article>;
 }
 
-function ListingDetail({ listing, seller, currentUser, onClose, onCart, onReport, onSendMessage }: { listing: Listing; seller?: Profile; currentUser: string | null; onClose: () => void; onCart: () => void; onReport: () => void; onSendMessage: (event: FormEvent<HTMLFormElement>) => void }) {
+function ListingDetail({ listing, seller, currentUser, onClose, onCart, onReport, onSendMessage }: { listing: Listing; seller?: Profile | undefined; currentUser: string | null; onClose: () => void; onCart: () => void; onReport: () => void; onSendMessage: (event: FormEvent<HTMLFormElement>) => void }) {
   const [image, setImage] = useState<string | null>(null);
   useEffect(() => {
     const path = listing.photos?.[0];
@@ -528,12 +555,14 @@ function AdminDesk({ listings, transactions }: { listings: Listing[]; transactio
   const [allowed, setAllowed] = useState<boolean | null>(null);
   const [reports, setReports] = useState<Tables<"marketplace_reports">[]>([]);
   useEffect(() => {
-    void supabase.rpc("has_role", { _user_id: "00000000-0000-0000-0000-000000000000", _role: "admin" }).then(() => undefined);
     void supabase.auth.getUser().then(async ({ data }) => {
       const id = data.user?.id;
       if (!id) { setAllowed(false); return; }
-      const roleResult = await supabase.from("user_roles").select("role").eq("user_id", id).eq("role", "admin").maybeSingle();
-      if (!roleResult.data) { setAllowed(false); return; }
+      const [adminRole, moderatorRole] = await Promise.all([
+        supabase.rpc("has_role", { _user_id: id, _role: "admin" }),
+        supabase.rpc("has_role", { _user_id: id, _role: "moderator" }),
+      ]);
+      if (!adminRole.data && !moderatorRole.data) { setAllowed(false); return; }
       setAllowed(true);
       const reportResult = await supabase.from("marketplace_reports").select("*").order("created_at", { ascending: false }).limit(100);
       setReports(reportResult.data ?? []);

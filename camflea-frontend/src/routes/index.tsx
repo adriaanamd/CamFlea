@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { BrowsePage } from "@/features/browse/browse-page";
+import { CamFleaPageShell } from "@/components/camflea-page-shell";
 import { supabase } from "@/integrations/supabase/client";
 
 async function loadBrowseListings() {
@@ -47,5 +48,9 @@ export const Route = createFileRoute("/")({
       { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: () => <BrowsePage loadListings={loadBrowseListings} />,
+  component: () => (
+    <CamFleaPageShell>
+      <BrowsePage loadListings={loadBrowseListings} />
+    </CamFleaPageShell>
+  ),
 });

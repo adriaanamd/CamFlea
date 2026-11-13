@@ -13,7 +13,7 @@ export function MessageThread({
   onBack,
 }: {
   participantName: string;
-  listingTitle?: string;
+  listingTitle?: string | undefined;
   messages: Message[];
   onSend: (body: string) => Promise<void>;
   onBack?: () => void;
@@ -42,7 +42,7 @@ export function MessageThread({
   return (
     <section
       aria-label={`Conversation with ${participantName}`}
-      className="flex min-h-[24rem] flex-col rounded-2xl border bg-card"
+      className="message-thread-panel"
     >
       <header className="flex items-center gap-3 border-b p-4">
         {onBack && (
@@ -65,7 +65,7 @@ export function MessageThread({
           </article>
         ))}
       </div>
-      <form className="flex gap-2 border-t p-3" onSubmit={submit}>
+      <form className="message-compose" onSubmit={submit}>
         <Input
           aria-label="Message"
           value={body}

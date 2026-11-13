@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { ListingDetail } from "@/features/listings/listing-detail";
+import { CamFleaPageShell } from "@/components/camflea-page-shell";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 
@@ -64,5 +65,9 @@ function ListingRoute() {
         <Link to="/">Browse listings</Link>
       </main>
     );
-  return <ListingDetail listing={listing} seller={seller} />;
+  return (
+    <CamFleaPageShell>
+      <ListingDetail listing={listing} seller={seller} />
+    </CamFleaPageShell>
+  );
 }

@@ -26,6 +26,7 @@ describe("AppShell", () => {
   it("keeps the marketplace destinations visibly labeled", () => {
     renderShell(true);
 
+    expect(screen.getByRole("complementary", { name: "Marketplace navigation" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Browse" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Post item" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Transactions" })).toBeInTheDocument();

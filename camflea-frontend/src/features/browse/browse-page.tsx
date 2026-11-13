@@ -63,14 +63,16 @@ export function BrowsePage({
     [listings, options],
   );
   return (
-    <main className="mx-auto w-full max-w-7xl space-y-6 px-4 py-8 sm:px-6">
-      <header className="space-y-2">
-        <p className="text-sm font-semibold text-primary">CamFlea campus marketplace</p>
-        <h1 className="text-4xl font-semibold tracking-tight">Find your next campus find</h1>
-        <p className="text-muted-foreground">Browse items listed by your campus community.</p>
+    <main className="browse-page">
+      <header className="page-heading">
+        <div>
+          <p className="eyebrow">CAMPUS FINDS, SECOND LIFE</p>
+          <h1>Find your next <em>good thing.</em></h1>
+          <p className="page-intro">Browse useful items listed by your campus community.</p>
+        </div>
       </header>
-      <label className="block max-w-2xl space-y-2">
-        <span className="text-sm font-medium">Search</span>
+      <label className="browse-search">
+        <span>Search the campus marketplace</span>
         <input
           aria-label="Search listings"
           type="search"
@@ -78,7 +80,7 @@ export function BrowsePage({
           value={options.query}
           onChange={(event) => setOptions({ ...options, query: event.target.value })}
           placeholder="Search items, descriptions, or meet-up places"
-          className="h-11 w-full rounded-xl border bg-background px-4"
+          className="browse-search-input"
         />
       </label>
       <FilterRail
@@ -90,7 +92,12 @@ export function BrowsePage({
         onSortChange={(sort) => setOptions({ ...options, sort })}
         onReset={() => setOptions({ ...options, category: "all", condition: "all" })}
       />
-      <h2 className="text-xl font-semibold">Browse listings</h2>
+      <div className="catalog-bar browse-catalog-bar">
+        <div>
+          <h2>Recently listed</h2>
+          <span>{results.length} {results.length === 1 ? "item" : "items"}</span>
+        </div>
+      </div>
       {stale && <p role="status">Showing saved results while refreshing.</p>}
       {loading ? (
         <p role="status">Loading listings…</p>

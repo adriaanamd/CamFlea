@@ -8,7 +8,7 @@ export function ListingForm({
   saving = false,
 }: {
   initial?: Partial<ListingInput>;
-  onSave: (value: ListingInput) => void | Promise<void>;
+  onSave: (value: ListingInput, files: File[]) => void | Promise<void>;
   saving?: boolean;
 }) {
   const [form, setForm] = useState<ListingInput>({
@@ -23,6 +23,7 @@ export function ListingForm({
     priceMax: initial?.priceMax ?? null,
     photos: initial?.photos ?? [],
   });
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const set = (key: keyof ListingInput, value: unknown) =>
     setForm((previous) => ({ ...previous, [key]: value }));
@@ -39,11 +40,11 @@ export function ListingForm({
       return;
     }
     setErrors({});
-    void onSave(parsed.data);
+    void onSave(parsed.data, photoFiles);
   }
   return (
-    <form onSubmit={submit} className="mx-auto max-w-3xl space-y-6 px-4 py-8">
-      <header>
+    <form onSubmit={submit} className="listing-form camflea-form-page">
+      <header className="page-heading">
         <h1 className="text-3xl font-semibold">{initial ? "Edit listing" : "Post an item"}</h1>
         <p className="text-muted-foreground">
           Share clear details so students know what you’re selling.
@@ -52,6 +53,7 @@ export function ListingForm({
       <MediaUploader
         photos={form.photos}
         onChange={(photos) => set("photos", photos)}
+        onFilesChange={setPhotoFiles}
         error={errors["photos"]}
       />
       <label className="block space-y-1">

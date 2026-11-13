@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MessagePage } from "@/features/messages/message-page";
+import { CamFleaPageShell } from "@/components/camflea-page-shell";
 
 export const Route = createFileRoute("/messages")({
   head: () => ({
@@ -8,5 +9,9 @@ export const Route = createFileRoute("/messages")({
       { name: "description", content: "Continue private CamFlea conversations." },
     ],
   }),
-  component: MessagePage,
+  component: () => (
+    <CamFleaPageShell>
+      <MessagePage />
+    </CamFleaPageShell>
+  ),
 });
