@@ -17,6 +17,7 @@ export default defineConfig({
         __dirname,
         "./node_modules/@testing-library/jest-dom/vitest.js",
       ),
+      "@testing-library/react": path.resolve(__dirname, "./node_modules/@testing-library/react"),
       "@tanstack/react-query": path.resolve(__dirname, "./node_modules/@tanstack/react-query"),
       "@tanstack/react-router": path.resolve(__dirname, "./node_modules/@tanstack/react-router"),
     },
