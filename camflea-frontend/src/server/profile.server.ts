@@ -22,4 +22,3 @@ export function profileUpdateForOwner(input: unknown) {
     bio: value.bio || null,
   };
 }
-
