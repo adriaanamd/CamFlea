@@ -5,11 +5,12 @@ React, TanStack Start, and Supabase.
 
 ## Development
 
-Install [Bun](https://bun.sh/) and run:
+From `camflea-frontend/`, install the existing npm dependencies and run:
 
 ```sh
-bun install
-bun run dev
+npm install
+npm run dev
 ```
 
-The available scripts include `build`, `lint`, `test`, and `format`.
+The available scripts include `build`, `lint`, `test`, and `format`; run them from
+`camflea-frontend/` with `npm run <script>`.
