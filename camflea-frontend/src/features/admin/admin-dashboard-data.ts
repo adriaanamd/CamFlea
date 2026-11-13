@@ -38,12 +38,28 @@ export type AdminAnalytics = {
   averageDaysToSell: number | null;
 };
 
-function countBy(values: string[]): AdminDistribution[] {
+const YEAR_LEVEL_ORDER = ["1st Year", "2nd Year", "3rd Year", "4th Year"];
+const CONDITION_ORDER = ["New", "Like new", "Good", "Fair"];
+const PRICE_RANGE_ORDER = ["Under ₱500", "₱500–₱1,499", "₱1,500–₱2,999", "₱3,000+", "Price hidden"];
+const STUDENTS_BY_PROGRAM_LIMIT = 5;
+
+function countBy(values: string[], order?: string[]): AdminDistribution[] {
   const counts = new Map<string, number>();
   values.forEach((value) => counts.set(value, (counts.get(value) ?? 0) + 1));
+  const orderMap = order
+    ? new Map(order.map((label, index) => [label.toLowerCase(), index]))
+    : null;
+
   return [...counts.entries()]
     .map(([label, count]) => ({ label, count }))
-    .sort((left, right) => right.count - left.count || left.label.localeCompare(right.label));
+    .sort((left, right) => {
+      if (orderMap) {
+        const leftIndex = orderMap.get(left.label.toLowerCase()) ?? order.length;
+        const rightIndex = orderMap.get(right.label.toLowerCase()) ?? order.length;
+        if (leftIndex !== rightIndex) return leftIndex - rightIndex;
+      }
+      return right.count - left.count || left.label.localeCompare(right.label);
+    });
 }
 
 function displayValue(value: string | null | undefined) {
@@ -70,11 +86,20 @@ export function buildAdminAnalytics(
     .filter((days): days is number => days !== null);
 
   return {
-    usersByYear: countBy(users.map((user) => displayValue(user.year_level))),
-    studentsByProgram: countBy(users.map((user) => displayValue(user.program))),
+    usersByYear: countBy(
+      users.map((user) => displayValue(user.year_level)),
+      YEAR_LEVEL_ORDER,
+    ),
+    studentsByProgram: countBy(users.map((user) => displayValue(user.program))).slice(
+      0,
+      STUDENTS_BY_PROGRAM_LIMIT,
+    ),
     listingsByCategory: countBy(listings.map((listing) => listing.category)),
     listingsByStatus: countBy(listings.map((listing) => listing.status)),
-    listingsByCondition: countBy(listings.map((listing) => listing.condition)),
+    listingsByCondition: countBy(
+      listings.map((listing) => listing.condition),
+      CONDITION_ORDER,
+    ),
     listingsByPriceType: countBy(listings.map((listing) => listing.price_type)),
     listingsByPriceRange: countBy(
       listings.map((listing) => {
@@ -85,14 +110,18 @@ export function buildAdminAnalytics(
         if (price < 3000) return "₱1,500–₱2,999";
         return "₱3,000+";
       }),
+      PRICE_RANGE_ORDER,
     ),
     transactionsByStatus: countBy(transactions.map((transaction) => transaction.status)),
     reportsByReason: countBy(reports.map((report) => report.reason)),
-    listingsByMonth: countBy(listings.map((listing) => listing.created_at.slice(0, 7))),
+    listingsByMonth: countBy(listings.map((listing) => listing.created_at.slice(0, 7))).sort(
+      (left, right) => left.label.localeCompare(right.label),
+    ),
     averageDaysToSell:
       completedDurations.length > 0
         ? Math.round(
-            (completedDurations.reduce((sum, days) => sum + days, 0) / completedDurations.length) * 10,
+            (completedDurations.reduce((sum, days) => sum + days, 0) / completedDurations.length) *
+              10,
           ) / 10
         : null,
   };

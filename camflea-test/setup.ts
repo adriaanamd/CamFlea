@@ -18,3 +18,13 @@ Object.defineProperty(window, "matchMedia", {
     dispatchEvent: () => {},
   }),
 });
+
+if (!globalThis.ResizeObserver) {
+  class TestResizeObserver implements ResizeObserver {
+    disconnect() {}
+    observe() {}
+    unobserve() {}
+  }
+
+  globalThis.ResizeObserver = TestResizeObserver;
+}

@@ -185,7 +185,10 @@ a {
   font-size: 0.84rem;
   font-weight: 650;
   text-decoration: none;
-  transition: background-color 320ms ease, color 320ms ease, transform 320ms ease;
+  transition:
+    background-color 320ms ease,
+    color 320ms ease,
+    transform 320ms ease;
 }
 
 .camflea-nav-link {
@@ -323,7 +326,9 @@ a {
 }
 
 @keyframes camflea-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @media (max-width: 980px) {
@@ -396,7 +401,7 @@ a {
   --cf-green-dark: #046f12;
   --cf-canvas: #e8f5e8;
   --cf-white: #ffffff;
-  --cf-shadow: 0 16px 42px rgba(25, 83, 37, 0.10);
+  --cf-shadow: 0 16px 42px rgba(25, 83, 37, 0.1);
   --cf-shadow-soft: 0 5px 18px rgba(25, 83, 37, 0.08);
 }
 
@@ -939,7 +944,9 @@ body {
   border-radius: 18px;
   background: #fff;
   box-shadow: var(--cf-shadow-soft);
-  transition: transform 180ms ease, box-shadow 180ms ease;
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
 }
 
 .listing-card:hover {
@@ -1118,11 +1125,18 @@ body {
   animation: camflea-bounce 900ms infinite alternate;
 }
 
-.loading-mark span:nth-child(2) { animation-delay: 150ms; }
-.loading-mark span:nth-child(3) { animation-delay: 300ms; }
+.loading-mark span:nth-child(2) {
+  animation-delay: 150ms;
+}
+.loading-mark span:nth-child(3) {
+  animation-delay: 300ms;
+}
 
 @keyframes camflea-bounce {
-  to { transform: translateY(-5px); opacity: 0.45; }
+  to {
+    transform: translateY(-5px);
+    opacity: 0.45;
+  }
 }
 
 .content-view,
@@ -2438,7 +2452,10 @@ body {
 }
 
 .camflea-nav-link {
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease;
+  transition:
+    background-color 180ms ease,
+    color 180ms ease,
+    border-color 180ms ease;
 }
 
 .camflea-nav-cta {
@@ -2663,7 +2680,9 @@ body {
   font-size: 1.05rem;
   font-weight: 800;
   text-decoration: none;
-  transition: transform 180ms ease, background-color 180ms ease;
+  transition:
+    transform 180ms ease,
+    background-color 180ms ease;
 }
 
 .landing-cta:hover {
@@ -2877,7 +2896,10 @@ body {
 }
 
 .admin-distribution-card {
+  display: grid;
+  gap: 0.35rem;
   padding: 1rem;
+  overflow: visible;
 }
 
 .admin-distribution-card h3 {
@@ -2885,52 +2907,209 @@ body {
   font-size: 0.95rem;
 }
 
-.admin-distribution-list {
-  display: grid;
-  gap: 0.65rem;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.admin-distribution-list li,
-.admin-distribution-value {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.admin-distribution-list li {
-  justify-content: space-between;
+.admin-chart-frame {
+  min-height: 220px;
   color: var(--cf-ink-muted);
-  font-size: 0.84rem;
 }
 
-.admin-distribution-value {
-  min-width: 42%;
-  justify-content: flex-end;
+.admin-chart-frame > .muted-copy {
+  display: grid;
+  min-height: 220px;
+  margin: 0;
+  place-items: center;
 }
 
-.admin-distribution-value strong {
-  min-width: 1.3rem;
+.admin-horizontal-bars {
+  display: grid;
+  min-height: 220px;
+  align-content: center;
+  gap: 0.9rem;
+}
+
+.admin-horizontal-bar-row {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.admin-horizontal-bar-meta {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
   color: var(--cf-ink);
-  text-align: right;
+  font-size: 0.78rem;
 }
 
-.admin-bar {
-  display: block;
-  width: min(8rem, 18vw);
-  height: 0.42rem;
-  overflow: hidden;
+.admin-horizontal-bar-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-horizontal-bar-track {
+  height: 0.6rem;
   border-radius: 999px;
   background: var(--cf-green-soft);
 }
 
-.admin-bar > span {
+.admin-chart-bar-interaction {
+  position: relative;
   display: block;
   height: 100%;
+  outline: none;
+}
+
+.admin-horizontal-bar-track .admin-chart-bar-interaction {
+  width: 100%;
+}
+
+.admin-horizontal-bar-fill {
+  display: block;
+  height: 100%;
+  min-width: 0.2rem;
   border-radius: inherit;
-  background: var(--cf-green);
+  background: var(--chart-bar-color);
+  transition: width 180ms ease;
+}
+
+.admin-column-bars {
+  display: grid;
+  min-height: 250px;
+  height: 250px;
+  grid-template-columns: repeat(auto-fit, minmax(3.5rem, 1fr));
+  align-items: stretch;
+  gap: 0.65rem;
+  padding: 0.5rem 0.25rem 0;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent 0,
+    transparent calc(25% - 1px),
+    color-mix(in srgb, var(--cf-border) 72%, transparent) calc(25% - 1px),
+    color-mix(in srgb, var(--cf-border) 72%, transparent) 25%
+  );
+}
+
+.admin-column-bar-item {
+  display: grid;
+  min-width: 0;
+  height: 100%;
+  min-height: 0;
+  grid-template-rows: minmax(0, 1fr) auto;
+  align-items: stretch;
+  gap: 0.35rem;
+  text-align: center;
+}
+
+.admin-column-bar-plot {
+  display: flex;
+  height: 100%;
+  min-height: 0;
+  align-items: stretch;
+  justify-content: center;
+}
+
+.admin-column-bar-track {
+  display: flex;
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  align-items: end;
+  justify-content: center;
+}
+
+.admin-column-bar-track .admin-chart-bar-interaction {
+  width: min(3.5rem, 78%);
+  height: 100%;
+}
+
+.admin-column-bar-fill {
+  display: block;
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  border-radius: 0.55rem 0.55rem 0 0;
+  background: var(--chart-bar-color);
+}
+
+.admin-chart-bar-tooltip {
+  position: absolute;
+  bottom: calc(100% + 0.45rem);
+  left: 50%;
+  z-index: 20;
+  display: grid;
+  min-width: max-content;
+  gap: 0.15rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--cf-border);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--cf-green-soft) 72%, var(--cf-surface));
+  box-shadow: 0 10px 20px rgba(25, 83, 37, 0.16);
+  color: var(--cf-ink-muted);
+  font-size: 0.7rem;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 0.35rem);
+  transition:
+    opacity 140ms ease,
+    transform 140ms ease;
+  white-space: nowrap;
+}
+
+.admin-chart-bar-interaction:hover .admin-chart-bar-tooltip,
+.admin-chart-bar-interaction:focus-visible .admin-chart-bar-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.admin-chart-bar-tooltip-label {
+  color: var(--cf-ink-muted);
+}
+
+.admin-chart-bar-tooltip-value {
+  color: var(--cf-ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-column-bar-label {
+  min-height: 2.2em;
+  overflow-wrap: anywhere;
+  color: var(--cf-ink-muted);
+  font-size: 0.7rem;
+  line-height: 1.25;
+}
+
+.admin-chart-container {
+  width: 100%;
+  min-width: 0;
+  height: 220px;
+  aspect-ratio: auto;
+  overflow: visible;
+}
+
+.admin-chart-container.admin-chart-donut {
+  height: 250px;
+}
+
+.admin-chart-container .recharts-cartesian-axis-tick-value,
+.admin-chart-container .recharts-text {
+  fill: var(--cf-ink-muted);
+  font-family: var(--font-body);
+  font-size: 0.69rem;
+}
+
+.admin-chart-container .recharts-cartesian-grid line {
+  stroke: color-mix(in srgb, var(--cf-border) 72%, transparent);
+}
+
+.admin-chart-container .recharts-default-legend {
+  margin-top: 0.25rem;
+}
+
+.admin-chart-container .recharts-legend-item-text {
+  color: var(--cf-ink-muted) !important;
+  font-family: var(--font-body);
+  font-size: 0.7rem;
 }
 
 .admin-filter-row {
@@ -3084,6 +3263,15 @@ body {
   .admin-record-actions {
     justify-content: flex-start;
   }
+
+  .admin-chart-container.admin-chart-donut {
+    height: 235px;
+  }
+
+  .admin-column-bars {
+    min-height: 235px;
+    height: 235px;
+  }
 }
 
 .camflea-logout {
@@ -3095,4 +3283,3 @@ body {
   text-align: left;
   cursor: pointer;
 }
-
