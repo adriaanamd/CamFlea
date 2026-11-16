@@ -40,19 +40,20 @@ export async function loadShellData(): Promise<ShellData> {
     };
   }
 
-  const [profileResult, notificationsResult, rolesResult, accountStatusResult] = await Promise.all([
+  const [profileResult, notificationsResult, adminRoleResult, moderatorRoleResult, accountStatusResult] = await Promise.all([
     supabase
       .from("student_profiles")
       .select("first_name,profile_image")
       .eq("user_id", user.id)
       .maybeSingle(),
     supabase.from("marketplace_notifications").select("id").eq("is_read", false),
-    supabase.from("user_roles").select("role").eq("user_id", user.id),
+    supabase.rpc("has_role", { _user_id: user.id, _role: "admin" }),
+    supabase.rpc("has_role", { _user_id: user.id, _role: "moderator" }),
     supabase.rpc("marketplace_get_my_account_status"),
   ]);
-  if (accountStatusResult.error) throw accountStatusResult.error;
-
   const account = accountStatusResult.data?.[0];
+  // Role checks must remain available if the optional moderation status RPC is temporarily unavailable.
+  // Marketplace mutations still enforce account status in Supabase.
   const status = (account?.status ?? "active") as AccountStatus;
   const accountStatus: AccountStatusSnapshot = {
     status: effectiveAccountStatus(status, account?.restriction_expires_at),
@@ -63,10 +64,8 @@ export async function loadShellData(): Promise<ShellData> {
 
   const metadata = user.user_metadata as { first_name?: string } | undefined;
   const firstName = profileResult.data?.first_name || metadata?.first_name || "Student";
-  const isStaff = (rolesResult.data ?? []).some(
-    (role) => role.role === "admin" || role.role === "moderator",
-  );
-  const isAdmin = (rolesResult.data ?? []).some((role) => role.role === "admin");
+  const isAdmin = adminRoleResult.data === true;
+  const isStaff = isAdmin || moderatorRoleResult.data === true;
 
   return {
     user: {
@@ -79,7 +78,7 @@ export async function loadShellData(): Promise<ShellData> {
     isStaff,
     isAdmin,
     accountStatus,
-    roleCheckFailed: Boolean(rolesResult.error),
+    roleCheckFailed: Boolean(adminRoleResult.error || moderatorRoleResult.error),
   };
 }
 

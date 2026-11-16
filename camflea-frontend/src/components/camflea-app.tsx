@@ -24,6 +24,7 @@ import {
 import { toast } from "sonner";
 
 import { ConfirmAction } from "@/components/confirm-action";
+import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -414,7 +415,7 @@ export function CamFleaApp({ view }: { view: RouteView }) {
             <form onSubmit={handleAuth} className="form-stack">
               {authMode === "sign-up" && <div className="form-row"><Field label="First name"><Input name="first_name" autoComplete="given-name" required /></Field><Field label="Last name"><Input name="last_name" autoComplete="family-name" required /></Field></div>}
               <Field label="School email"><Input name="email" type="email" autoComplete="email" placeholder="you@school.edu" required /></Field>
-              <Field label="Password"><Input name="password" type="password" autoComplete={authMode === "sign-in" ? "current-password" : "new-password"} minLength={8} required /></Field>
+              <Field label="Password"><PasswordInput name="password" autoComplete={authMode === "sign-in" ? "current-password" : "new-password"} minLength={8} required /></Field>
               <Button type="submit" className="w-full" disabled={busy}>{busy ? "Please wait…" : authMode === "sign-in" ? "Log in" : "Create account"}</Button>
             </form>
             {authMode === "sign-in" && <button className="text-command auth-forgot" onClick={async () => {
