@@ -1,5 +1,6 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { AccountStatusProvider } from "@/components/account-status-context";
 import { ListingForm } from "@/features/listings/listing-form";
 
 describe("ListingForm", () => {
@@ -36,5 +37,23 @@ describe("ListingForm", () => {
     fireEvent.click(screen.getByRole("button", { name: /post item/i }));
 
     expect(save).toHaveBeenCalledWith(expect.objectContaining({ title: "Notebook" }), [photo]);
+  });
+
+  it("disables posting for a restricted account", () => {
+    render(
+      <AccountStatusProvider
+        value={{
+          status: "restricted",
+          reason: null,
+          restrictionExpiresAt: null,
+          warningCount: 1,
+        }}
+      >
+        <ListingForm onSave={vi.fn()} />
+      </AccountStatusProvider>,
+    );
+
+    expect(screen.getByRole("button", { name: /post item/i })).toBeDisabled();
+    expect(screen.getByText(/cannot post/i)).toBeInTheDocument();
   });
 });
