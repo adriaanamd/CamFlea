@@ -1,0 +1,7 @@
+{
+  "name": "camflea-se2-root",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix camflea-frontend run dev"
+  }
+}
