@@ -412,6 +412,24 @@ describe("AdminDashboard", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
+  it("closes the listing preview with Escape", async () => {
+    renderItemsDashboard({ listings: [listing] });
+    fireEvent.click(await screen.findByRole("button", { name: "View listing" }));
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("closes the listing preview when the backdrop is dismissed", async () => {
+    renderItemsDashboard({ listings: [listing] });
+    fireEvent.click(await screen.findByRole("button", { name: "View listing" }));
+    await screen.findByRole("dialog");
+    const overlay = document.querySelector(".fixed.inset-0.z-50") as HTMLElement;
+    fireEvent.pointerDown(overlay);
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
   it("requires confirmation before warning a user", async () => {
     const warnUser = vi.fn().mockResolvedValue({ warningCount: 1 });
     render(
