@@ -51,14 +51,10 @@ const listings: BrowseListing[] = [
 ];
 
 describe("browse domain", () => {
-  it("exposes the legacy category and condition values", () => {
-    expect(browseCategories).toContain("sports & fitness");
-    expect(browseCategories).toContain("instruments & recreations");
-    expect(browseConditions).toEqual([
-      "brand new",
-      "gently used",
-      "heavily used",
-    ]);
+  it("exposes the supported category and condition values", () => {
+    expect(browseCategories).toContain("Sports & Outdoors");
+    expect(browseCategories).toContain("Crafted & Collectibles");
+    expect(browseConditions).toEqual(["New", "Like new", "Good", "Fair"]);
   });
 
   it("searches all supported text fields before applying filters and sort", () => {

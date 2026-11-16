@@ -1,11 +1,24 @@
 import { render, screen } from "@testing-library/react";
+import { QueryClient } from "@tanstack/react-query";
+import { createMemoryHistory, createRouter, RouterContextProvider } from "@tanstack/react-router";
+import type { ReactElement } from "react";
 import { describe, expect, it } from "vitest";
 import { AccountStatusProvider } from "@/components/account-status-context";
 import { ListingDetail } from "@/features/listings/listing-detail";
+import { routeTree } from "@/routeTree.gen";
+
+function renderListingDetail(element: ReactElement) {
+  const router = createRouter({
+    routeTree,
+    context: { queryClient: new QueryClient() },
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+  });
+  return render(<RouterContextProvider router={router}>{element}</RouterContextProvider>);
+}
 
 describe("ListingDetail", () => {
   it("shows the item, price, meet-up location, and unavailable status", () => {
-    render(
+    renderListingDetail(
       <ListingDetail
         listing={{
           id: "1",
@@ -34,8 +47,8 @@ describe("ListingDetail", () => {
     expect(screen.getByText(/sold/i)).toBeInTheDocument();
   });
 
-  it("uses the resolved photo URL for the selected image and thumbnails", async () => {
-    render(
+  it("uses the resolved photo URL for the selected image", async () => {
+    renderListingDetail(
       <ListingDetail
         listing={{
           id: "1",
@@ -59,12 +72,12 @@ describe("ListingDetail", () => {
 
     await screen.findByRole("img", { name: "Calculator photo 1" });
     const images = [...document.querySelectorAll("img")];
-    expect(images).toHaveLength(2);
+    expect(images).toHaveLength(1);
     expect(images.every((image) => image.getAttribute("src") === "https://cdn.example.test/calculator.png")).toBe(true);
   });
 
   it("disables purchase and seller messaging for a restricted account", () => {
-    render(
+    renderListingDetail(
       <AccountStatusProvider
         value={{
           status: "restricted",

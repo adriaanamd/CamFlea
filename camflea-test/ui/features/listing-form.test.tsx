@@ -32,8 +32,9 @@ describe("ListingForm", () => {
       target: { value: "Other" },
     });
     fireEvent.change(screen.getByLabelText(/meet-up place/i), { target: { value: "Library" } });
+    fireEvent.click(screen.getByRole("radio", { name: /discuss price/i }));
     const photo = new File(["image"], "notebook.png", { type: "image/png" });
-    fireEvent.change(screen.getByLabelText(/photos/i), { target: { files: [photo] } });
+    fireEvent.change(document.getElementById("listing-photos")!, { target: { files: [photo] } });
     fireEvent.click(screen.getByRole("button", { name: /post item/i }));
 
     expect(save).toHaveBeenCalledWith(expect.objectContaining({ title: "Notebook" }), [photo]);
