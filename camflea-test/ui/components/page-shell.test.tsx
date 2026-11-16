@@ -50,6 +50,23 @@ describe("CamFleaPageShell", () => {
     expect(screen.getByRole("link", { name: "Admin" })).toHaveAttribute("href", "/admin");
   });
 
+  it("shows a restricted status notice from shell data", async () => {
+    renderPage(
+      vi.fn<() => Promise<ShellData>>().mockResolvedValue({
+        ...shellData,
+        accountStatus: {
+          status: "restricted",
+          reason: "Repeated spam",
+          restrictionExpiresAt: "2026-12-01T12:00:00.000Z",
+          warningCount: 2,
+        },
+      }),
+      <h1>Browse items</h1>,
+    );
+
+    expect(await screen.findByRole("status", { name: /account restricted/i })).toBeVisible();
+  });
+
   it("shows the page even when session hydration fails", async () => {
     const load = vi.fn<() => Promise<ShellData>>().mockRejectedValue(new Error("offline"));
 
