@@ -64,4 +64,19 @@ describe("AdminUserManagement", () => {
     expect(screen.getByText("A Student")).toBeInTheDocument();
     expect(screen.queryByText("Quiet Student")).not.toBeInTheDocument();
   });
+
+  it("uses an unban action for banned users", () => {
+    const setAccountStatus = vi.fn().mockResolvedValue({ success: true });
+    render(
+      <AdminUserManagement
+        users={[{ ...adminUserFixture, status: "banned", is_banned: true }]}
+        onAction={(action) => action()}
+        warnUser={vi.fn()}
+        setAccountStatus={setAccountStatus}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Unban" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Ban", exact: true })).not.toBeInTheDocument();
+  });
 });

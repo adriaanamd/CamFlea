@@ -40,6 +40,7 @@ import type {
   AdminTransaction,
   AdminUser,
 } from "@/features/admin/admin-dashboard-data";
+import { showSuccessToast } from "@/lib/notifications";
 import { reviewAdminReport } from "@/features/admin/report-actions";
 
 export type AdminTab = "dashboard" | "users" | "items" | "transactions" | "reports";
@@ -115,10 +116,14 @@ export function AdminDashboard({
     };
   }, [loadWorkspace, refreshKey]);
 
-  async function runAction(action: () => Promise<unknown>) {
+  async function runAction(
+    action: () => Promise<unknown>,
+    successMessage = "Admin action completed.",
+  ) {
     setError(null);
     try {
       await action();
+      showSuccessToast(successMessage);
       setRefreshKey((key) => key + 1);
     } catch {
       setError("The admin action could not be completed. Refresh and try again.");
@@ -157,7 +162,6 @@ export function AdminDashboard({
           </Button>
         </div>
       ) : null}
-
       {loading && !workspace ? <p role="status">Loading admin dashboard…</p> : null}
       {!loading && !workspace && !error ? <p role="status">No admin data is available.</p> : null}
 

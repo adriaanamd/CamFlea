@@ -15,10 +15,14 @@ const supabaseMocks = vi.hoisted(() => ({
   createSignedUrl: vi.fn(),
   from: vi.fn(),
 }));
-
+const toastMock = vi.hoisted(() => ({
+  success: vi.fn(),
+}));
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: { storage: { from: supabaseMocks.from } },
 }));
+
+vi.mock("@/lib/notifications", () => ({ showSuccessToast: toastMock.success }));
 
 const emptyAnalytics: AdminWorkspaceData["analytics"] = {
   usersByYear: [],
@@ -507,6 +511,33 @@ describe("AdminDashboard", () => {
     expect(setAccountStatus).not.toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Ban user" }));
     await waitFor(() => expect(setAccountStatus).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(toastMock.success).toHaveBeenCalledWith("User banned successfully."));
+  });
+
+  it("shows unban for a banned user", async () => {
+    const setAccountStatus = vi.fn().mockResolvedValue({ success: true });
+    render(
+      <AdminDashboard
+        tab="users"
+        loadWorkspace={vi.fn().mockResolvedValue({
+          ...destructiveWorkspace,
+          users: [{ ...user, status: "banned", is_banned: true }],
+        })}
+        setAccountStatus={setAccountStatus}
+      />,
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "Unban" }));
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("They will be able to use CamFlea again.");
+    fireEvent.click(screen.getByRole("button", { name: "Unban user" }));
+
+    await waitFor(() => expect(setAccountStatus).toHaveBeenCalledWith({
+      userId: user.user_id,
+      status: "active",
+      reason: "Unbanned by administrator",
+      restrictionExpiresAt: null,
+    }));
+    await waitFor(() => expect(toastMock.success).toHaveBeenCalledWith("User unbanned successfully."));
   });
 
   it("requires confirmation before removing a listing", async () => {

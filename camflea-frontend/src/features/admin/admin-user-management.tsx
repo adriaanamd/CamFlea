@@ -9,7 +9,7 @@ import { Label } from "@/components/ui/label";
 import type { AdminUser } from "@/features/admin/admin-dashboard-data";
 import { RestrictUserAction } from "@/features/admin/restrict-user-action";
 
-type AdminUserAction = (action: () => Promise<unknown>) => Promise<void>;
+type AdminUserAction = (action: () => Promise<unknown>, successMessage?: string) => Promise<void>;
 type WarnUser = (input: { userId: string; reason?: string }) => Promise<{ warningCount: number }>;
 type SetAccountStatus = (input: {
   userId: string;
@@ -125,8 +125,8 @@ function AdminUserRecord({
   warnUser: WarnUser;
   setAccountStatus: SetAccountStatus;
 }) {
-  const nextStatus =
-    user.status === "banned" ? "active" : user.status === "restricted" ? "active" : "restricted";
+  const isBanned = user.status === "banned";
+  const nextStatus = user.status === "restricted" ? "active" : "restricted";
 
   return (
     <Card className="admin-record-card">
@@ -155,14 +155,17 @@ function AdminUserRecord({
           confirmLabel="Warn user"
           reasonLabel="Optional warning reason"
           onConfirm={(reason) =>
-            onAction(() => warnUser({ userId: user.user_id, reason: reason || "Admin warning" }))
+            onAction(
+              () => warnUser({ userId: user.user_id, reason: reason || "Admin warning" }),
+              "Warning added.",
+            )
           }
         >
           <Button type="button" variant="outline">
             <CircleAlert aria-hidden="true" /> Warn
           </Button>
         </ConfirmAction>
-        {nextStatus === "active" ? (
+        {!isBanned && nextStatus === "active" ? (
           <Button
             type="button"
             variant="outline"
@@ -174,12 +177,13 @@ function AdminUserRecord({
                   reason: `${nextStatus} by administrator`,
                   restrictionExpiresAt: null,
                 }),
+                "User restored.",
               )
             }
           >
             Restore
           </Button>
-        ) : (
+        ) : !isBanned ? (
           <RestrictUserAction
             userName={`${user.first_name} ${user.last_name}`}
             onConfirm={({ reason, restrictionExpiresAt }) =>
@@ -190,6 +194,7 @@ function AdminUserRecord({
                   reason: reason || `${nextStatus} by administrator`,
                   restrictionExpiresAt,
                 }),
+                "User restricted.",
               )
             }
           >
@@ -197,23 +202,29 @@ function AdminUserRecord({
               Restrict
             </Button>
           </RestrictUserAction>
-        )}
+        ) : null}
         <ConfirmAction
-          description={`Ban ${user.first_name} ${user.last_name}? They will be blocked from CamFlea.`}
-          confirmLabel="Ban user"
+          description={
+            isBanned
+              ? `Unban ${user.first_name} ${user.last_name}? They will be able to use CamFlea again.`
+              : `Ban ${user.first_name} ${user.last_name}? They will be blocked from CamFlea.`
+          }
+          confirmLabel={isBanned ? "Unban user" : "Ban user"}
           onConfirm={() =>
-            onAction(() =>
-              setAccountStatus({
-                userId: user.user_id,
-                status: "banned",
-                reason: "Banned by administrator",
-                restrictionExpiresAt: null,
-              }),
+            onAction(
+              () =>
+                setAccountStatus({
+                  userId: user.user_id,
+                  status: isBanned ? "active" : "banned",
+                  reason: isBanned ? "Unbanned by administrator" : "Banned by administrator",
+                  restrictionExpiresAt: null,
+                }),
+              isBanned ? "User unbanned successfully." : "User banned successfully.",
             )
           }
         >
           <Button type="button" variant="outline">
-            <Ban aria-hidden="true" /> Ban
+            {isBanned ? "Unban" : <><Ban aria-hidden="true" /> Ban</>}
           </Button>
         </ConfirmAction>
       </div>
