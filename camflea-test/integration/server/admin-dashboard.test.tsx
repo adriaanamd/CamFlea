@@ -401,6 +401,17 @@ describe("AdminDashboard", () => {
     expect(supabaseMocks.createSignedUrl).toHaveBeenCalledWith("private/book-front.png", 3600);
   });
 
+  it("closes the listing preview from its close control", async () => {
+    renderItemsDashboard({ listings: [listing] });
+    fireEvent.click(await screen.findByRole("button", { name: "View listing" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent(listing.title);
+    fireEvent.click(screen.getByRole("button", { name: "Close listing preview" }));
+
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
   it("requires confirmation before warning a user", async () => {
     const warnUser = vi.fn().mockResolvedValue({ warningCount: 1 });
     render(

@@ -2,11 +2,14 @@ import { useEffect, useState } from "react";
 
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 import { StatusPill } from "@/components/status-pill";
 import { formatListingPrice } from "@/features/browse/domain";
 import type { AdminListing } from "@/features/admin/admin-dashboard-data";
@@ -107,6 +110,13 @@ export function AdminListingPreview({
                 </p>
               </div>
             </div>
+            <DialogFooter>
+              <DialogClose asChild>
+                <Button type="button" variant="outline" aria-label="Close listing preview">
+                  Close
+                </Button>
+              </DialogClose>
+            </DialogFooter>
           </>
         ) : null}
       </DialogContent>
