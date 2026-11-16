@@ -8,13 +8,27 @@ const migrationPath = path.resolve(
 );
 
 describe("user moderation migration", () => {
-  it("contains expiry, effective status, admin stats, and marketplace guards", () => {
+  function readMigration() {
     expect(existsSync(migrationPath)).toBe(true);
-    if (!existsSync(migrationPath)) return;
-    const sql = readFileSync(migrationPath, "utf8");
+    return existsSync(migrationPath) ? readFileSync(migrationPath, "utf8") : "";
+  }
+
+  it("contains restriction expiry storage", () => {
+    const sql = readMigration();
     expect(sql).toMatch(/restriction_expires_at/i);
+  });
+
+  it("contains effective account status functions", () => {
+    const sql = readMigration();
     expect(sql).toMatch(/marketplace_effective_account_status/i);
     expect(sql).toMatch(/marketplace_get_my_account_status/i);
+    expect(sql).toMatch(/RETURNS TEXT[\s\S]*marketplace_effective_account_status/i);
+    expect(sql).toMatch(/RETURNS TABLE[\s\S]*marketplace_get_my_account_status/i);
+    expect(sql).toMatch(/status = 'restricted'[\s\S]*restriction_expires_at > now\(\)/i);
+  });
+
+  it("contains admin statistics and marketplace guard surfaces", () => {
+    const sql = readMigration();
     expect(sql).toMatch(/listing_count/i);
     expect(sql).toMatch(/message_count/i);
     expect(sql).toMatch(/marketplace_send_message/i);
