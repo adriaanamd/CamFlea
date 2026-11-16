@@ -12,13 +12,36 @@ import type {
 
 const userId = z.string().uuid();
 const reason = z.string().trim().max(500).optional();
+const restrictionExpiresAt = z.string().datetime({ offset: true }).nullable().optional();
 
 export const adminUserActionInputSchema = z.object({ userId, reason });
-export const adminAccountStatusInputSchema = z.object({
-  userId,
-  status: z.enum(["active", "restricted", "banned"]),
-  reason,
-});
+export const adminAccountStatusInputSchema = z
+  .object({
+    userId,
+    status: z.enum(["active", "restricted", "banned"]),
+    reason,
+    restrictionExpiresAt,
+  })
+  .superRefine((value, context) => {
+    if (value.status !== "restricted" && value.restrictionExpiresAt) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["restrictionExpiresAt"],
+        message: "Only restricted accounts can have an expiration.",
+      });
+    }
+    if (
+      value.status === "restricted" &&
+      value.restrictionExpiresAt &&
+      new Date(value.restrictionExpiresAt) <= new Date()
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["restrictionExpiresAt"],
+        message: "Restriction expiration must be in the future.",
+      });
+    }
+  });
 export const adminListingFlagsInputSchema = z.object({
   listingId: userId,
   isPinned: z.boolean(),
