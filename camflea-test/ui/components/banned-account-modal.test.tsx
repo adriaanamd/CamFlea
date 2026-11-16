@@ -1,5 +1,4 @@
-import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { BannedAccountModal } from "@/components/banned-account-modal";
@@ -13,7 +12,7 @@ describe("BannedAccountModal", () => {
     expect(
       screen.getByRole("dialog", { name: /you are banned from camflea/i }),
     ).toBeVisible();
-    await userEvent.click(screen.getByRole("button", { name: /sign out/i }));
+    fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
     expect(signOut).toHaveBeenCalledTimes(1);
   });
 });
