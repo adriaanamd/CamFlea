@@ -123,3 +123,73 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.admin_set_account_status(UUID, TEXT, TEXT, TIMESTAMPTZ) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_set_account_status(UUID, TEXT, TEXT, TIMESTAMPTZ) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.admin_list_student_profiles()
+RETURNS TABLE (
+  user_id UUID,
+  email TEXT,
+  first_name TEXT,
+  last_name TEXT,
+  school TEXT,
+  program TEXT,
+  year_level TEXT,
+  profile_image TEXT,
+  bio TEXT,
+  is_banned BOOLEAN,
+  status TEXT,
+  reason TEXT,
+  warning_count INTEGER,
+  restriction_expires_at TIMESTAMPTZ,
+  listing_count INTEGER,
+  available_listing_count INTEGER,
+  sold_listing_count INTEGER,
+  transaction_count INTEGER,
+  completed_purchase_count INTEGER,
+  message_count INTEGER,
+  report_count INTEGER,
+  created_at TIMESTAMPTZ,
+  updated_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth
+AS $$
+BEGIN
+  IF auth.uid() IS NULL OR NOT public.has_role(auth.uid(), 'admin') THEN
+    RAISE EXCEPTION 'Only administrators can view account records';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    profile.user_id,
+    auth_user.email::TEXT,
+    profile.first_name,
+    profile.last_name,
+    profile.school,
+    profile.program,
+    profile.year_level,
+    profile.profile_image,
+    profile.bio,
+    profile.is_banned,
+    public.marketplace_effective_account_status(profile.user_id),
+    account.reason,
+    COALESCE(account.warning_count, 0),
+    account.restriction_expires_at,
+    (SELECT count(*)::INTEGER FROM public.marketplace_listings AS listing WHERE listing.seller_id = profile.user_id),
+    (SELECT count(*)::INTEGER FROM public.marketplace_listings AS listing WHERE listing.seller_id = profile.user_id AND listing.status = 'available'),
+    (SELECT count(*)::INTEGER FROM public.marketplace_listings AS listing WHERE listing.seller_id = profile.user_id AND listing.status = 'sold'),
+    (SELECT count(*)::INTEGER FROM public.marketplace_transactions AS transaction_row WHERE transaction_row.buyer_id = profile.user_id OR transaction_row.seller_id = profile.user_id),
+    (SELECT count(*)::INTEGER FROM public.marketplace_transactions AS transaction_row WHERE transaction_row.buyer_id = profile.user_id AND transaction_row.status = 'completed'),
+    (SELECT count(*)::INTEGER FROM public.marketplace_messages AS message_row WHERE message_row.sender_id = profile.user_id),
+    (SELECT count(*)::INTEGER FROM public.marketplace_reports AS report_row WHERE report_row.reported_user_id = profile.user_id),
+    profile.created_at,
+    profile.updated_at
+  FROM public.student_profiles AS profile
+  JOIN auth.users AS auth_user ON auth_user.id = profile.user_id
+  LEFT JOIN public.marketplace_account_status AS account ON account.user_id = profile.user_id
+  ORDER BY profile.created_at DESC;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.admin_list_student_profiles() FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.admin_list_student_profiles() TO authenticated;
