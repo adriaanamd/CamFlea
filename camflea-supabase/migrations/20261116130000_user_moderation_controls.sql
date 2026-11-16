@@ -275,3 +275,104 @@ USING (
   AND (storage.foldername(name))[1] = auth.uid()::text
   AND public.marketplace_effective_account_status(auth.uid()) = 'active'
 );
+
+CREATE OR REPLACE FUNCTION public.marketplace_add_to_cart(_listing_id UUID)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  listing_row public.marketplace_listings%ROWTYPE;
+  transaction_id UUID;
+BEGIN
+  IF auth.uid() IS NULL THEN
+    RAISE EXCEPTION 'Sign in to add items to your cart';
+  END IF;
+  IF public.marketplace_effective_account_status(auth.uid()) <> 'active' THEN
+    RAISE EXCEPTION 'This account cannot use marketplace actions';
+  END IF;
+
+  SELECT * INTO listing_row
+  FROM public.marketplace_listings
+  WHERE id = _listing_id AND status = 'available'
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'This listing is no longer available';
+  END IF;
+  IF listing_row.seller_id = auth.uid() THEN
+    RAISE EXCEPTION 'You cannot add your own listing';
+  END IF;
+  IF EXISTS (
+    SELECT 1 FROM public.marketplace_transactions
+    WHERE listing_id = _listing_id
+      AND buyer_id = auth.uid()
+      AND status IN ('cart', 'requested', 'sent', 'received')
+  ) THEN
+    RAISE EXCEPTION 'This listing is already in your cart or purchase list';
+  END IF;
+
+  INSERT INTO public.marketplace_transactions (
+    buyer_id, seller_id, listing_id, status,
+    listing_title_snapshot, price_type_snapshot, price_snapshot, price_min_snapshot, price_max_snapshot
+  )
+  VALUES (
+    auth.uid(), listing_row.seller_id, listing_row.id, 'cart',
+    listing_row.title, listing_row.price_type, listing_row.price, listing_row.price_min, listing_row.price_max
+  )
+  RETURNING id INTO transaction_id;
+
+  RETURN transaction_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.marketplace_request_purchase(_transaction_id UUID)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  transaction_row public.marketplace_transactions%ROWTYPE;
+  listing_row public.marketplace_listings%ROWTYPE;
+BEGIN
+  IF auth.uid() IS NULL OR public.marketplace_effective_account_status(auth.uid()) <> 'active' THEN
+    RAISE EXCEPTION 'This account cannot use marketplace actions';
+  END IF;
+
+  SELECT * INTO transaction_row
+  FROM public.marketplace_transactions
+  WHERE id = _transaction_id AND buyer_id = auth.uid() AND status = 'cart'
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Cart item is no longer available';
+  END IF;
+
+  SELECT * INTO listing_row
+  FROM public.marketplace_listings
+  WHERE id = transaction_row.listing_id AND status = 'available'
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'This listing is no longer available';
+  END IF;
+
+  UPDATE public.marketplace_transactions
+  SET status = 'requested', updated_at = now()
+  WHERE id = transaction_row.id;
+
+  UPDATE public.marketplace_listings
+  SET status = 'reserved', updated_at = now()
+  WHERE id = listing_row.id;
+
+  INSERT INTO public.marketplace_notifications (recipient_id, sender_id, listing_id, kind, content)
+  VALUES (listing_row.seller_id, auth.uid(), listing_row.id, 'purchase_request', 'A student requested to buy your listing.');
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.marketplace_add_to_cart(UUID) FROM PUBLIC, anon;
+REVOKE EXECUTE ON FUNCTION public.marketplace_request_purchase(UUID) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.marketplace_add_to_cart(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.marketplace_request_purchase(UUID) TO authenticated;

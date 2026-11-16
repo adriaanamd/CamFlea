@@ -12,4 +12,9 @@ describe("listing moderation enforcement", () => {
     expect((sql.match(/marketplace_effective_account_status\(auth\.uid\(\)\) = 'active'/gi) ?? []).length).toBeGreaterThanOrEqual(4);
     expect(sql).toMatch(/storage\.foldername\(name\)[\s\S]*marketplace_effective_account_status\(auth\.uid\(\)\)/i);
   });
+
+  it("guards purchase initiation with effective status", () => {
+    expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.marketplace_add_to_cart[\s\S]*marketplace_effective_account_status\(auth\.uid\(\)\) <> 'active'/i);
+    expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.marketplace_request_purchase[\s\S]*marketplace_effective_account_status\(auth\.uid\(\)\) <> 'active'/i);
+  });
 });
