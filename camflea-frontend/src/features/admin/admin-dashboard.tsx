@@ -24,6 +24,7 @@ import {
   type AdminChartLabelKind,
 } from "@/features/admin/admin-analytics-chart";
 import { AdminListingPreview } from "@/features/admin/admin-listing-preview";
+import { AdminUserManagement } from "@/features/admin/admin-user-management";
 import {
   adminDeleteListing,
   adminSetAccountStatus,
@@ -49,6 +50,7 @@ type SetAccountStatus = (input: {
   userId: string;
   status: "active" | "restricted" | "banned";
   reason?: string;
+  restrictionExpiresAt?: string | null;
 }) => Promise<{ success: boolean }>;
 type SetListingFlags = (input: {
   listingId: string;
@@ -163,7 +165,7 @@ export function AdminDashboard({
         <div className="admin-tabpanel">
           {activeTab === "dashboard" ? <DashboardOverview data={workspace} /> : null}
           {activeTab === "users" ? (
-            <UserManagement
+            <AdminUserManagement
               users={workspace.users}
               onAction={runAction}
               warnUser={warnUser}
