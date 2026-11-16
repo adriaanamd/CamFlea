@@ -11,6 +11,12 @@ const shellData: ShellData = {
   unreadCount: 3,
   isStaff: true,
   isAdmin: false,
+  accountStatus: {
+    status: "active",
+    reason: null,
+    restrictionExpiresAt: null,
+    warningCount: 0,
+  },
 };
 
 describe("CamFleaPageShell", () => {

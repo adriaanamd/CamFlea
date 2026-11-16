@@ -3,12 +3,18 @@ import { useNavigate } from "@tanstack/react-router";
 
 import { AppShell } from "@/components/app-shell";
 import { supabase } from "@/integrations/supabase/client";
+import {
+  effectiveAccountStatus,
+  type AccountStatusSnapshot,
+  type AccountStatus,
+} from "@/lib/domain/account-status";
 
 export type ShellData = {
   user: { firstName: string; profileImage?: string | null } | null;
   unreadCount: number;
   isStaff: boolean;
   isAdmin: boolean;
+  accountStatus: AccountStatusSnapshot;
   roleCheckFailed?: boolean;
 };
 
@@ -17,9 +23,22 @@ export async function loadShellData(): Promise<ShellData> {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (!user) return { user: null, unreadCount: 0, isStaff: false, isAdmin: false };
+  if (!user) {
+    return {
+      user: null,
+      unreadCount: 0,
+      isStaff: false,
+      isAdmin: false,
+      accountStatus: {
+        status: "active",
+        reason: null,
+        restrictionExpiresAt: null,
+        warningCount: 0,
+      },
+    };
+  }
 
-  const [profileResult, notificationsResult, rolesResult] = await Promise.all([
+  const [profileResult, notificationsResult, rolesResult, accountStatusResult] = await Promise.all([
     supabase
       .from("student_profiles")
       .select("first_name,profile_image")
@@ -27,7 +46,18 @@ export async function loadShellData(): Promise<ShellData> {
       .maybeSingle(),
     supabase.from("marketplace_notifications").select("id").eq("is_read", false),
     supabase.from("user_roles").select("role").eq("user_id", user.id),
+    supabase.rpc("marketplace_get_my_account_status"),
   ]);
+  if (accountStatusResult.error) throw accountStatusResult.error;
+
+  const account = accountStatusResult.data?.[0];
+  const status = (account?.status ?? "active") as AccountStatus;
+  const accountStatus: AccountStatusSnapshot = {
+    status: effectiveAccountStatus(status, account?.restriction_expires_at),
+    reason: account?.reason ?? null,
+    restrictionExpiresAt: account?.restriction_expires_at ?? null,
+    warningCount: account?.warning_count ?? 0,
+  };
 
   const metadata = user.user_metadata as { first_name?: string } | undefined;
   const firstName = profileResult.data?.first_name || metadata?.first_name || "Student";
@@ -46,6 +76,7 @@ export async function loadShellData(): Promise<ShellData> {
     unreadCount: notificationsResult.data?.length ?? 0,
     isStaff,
     isAdmin,
+    accountStatus,
     roleCheckFailed: Boolean(rolesResult.error),
   };
 }
@@ -69,7 +100,18 @@ export function CamFleaPageShell({
     void load()
       .catch(() => {
         if (active) setLoadFailed(true);
-        return { user: null, unreadCount: 0, isStaff: false, isAdmin: false };
+        return {
+          user: null,
+          unreadCount: 0,
+          isStaff: false,
+          isAdmin: false,
+          accountStatus: {
+            status: "active",
+            reason: null,
+            restrictionExpiresAt: null,
+            warningCount: 0,
+          },
+        };
       })
       .then((data) => {
         if (active) setState(data);
