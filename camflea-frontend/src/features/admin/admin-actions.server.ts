@@ -87,6 +87,7 @@ export async function setAccountStatusForAdmin(
     _user_id: input.userId,
     _status: input.status,
     _reason: input.reason ?? null,
+    _restriction_expires_at: input.restrictionExpiresAt ?? null,
   });
   if (error) throw new Error("Unable to update this account status.");
   return { success: true };
