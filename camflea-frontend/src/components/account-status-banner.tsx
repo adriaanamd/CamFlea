@@ -16,7 +16,12 @@ export function AccountStatusBanner({
     : "until an administrator restores your account";
 
   return (
-    <div role="status" aria-label="Account restricted" className="account-status-banner">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-label="Account restricted"
+      className="account-status-banner"
+    >
       <strong>Account restricted</strong>
       <span>
         You can browse listings, but you cannot post, message, or purchase. Restriction ends {expiry}.

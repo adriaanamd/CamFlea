@@ -14,6 +14,10 @@ describe("AccountStatusBanner", () => {
 
     expect(screen.getByRole("status")).toHaveTextContent(/cannot post, message, or purchase/i);
     expect(screen.getByRole("status")).toHaveTextContent(/Dec 1, 2026/i);
+    expect(screen.getByRole("status", { name: /account restricted/i })).toHaveAttribute(
+      "aria-live",
+      "polite",
+    );
   });
 
   it("explains when an indefinite restriction needs administrator restoration", () => {

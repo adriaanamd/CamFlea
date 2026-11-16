@@ -11,7 +11,7 @@ describe("BannedAccountModal", () => {
 
     expect(
       screen.getByRole("dialog", { name: /you are banned from camflea/i }),
-    ).toBeVisible();
+    ).toHaveAttribute("aria-modal", "true");
     fireEvent.click(screen.getByRole("button", { name: /sign out/i }));
     expect(signOut).toHaveBeenCalledTimes(1);
   });
