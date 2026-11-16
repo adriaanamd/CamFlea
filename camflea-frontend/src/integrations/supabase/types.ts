@@ -19,6 +19,7 @@ export type Database = {
           changed_by: string | null
           created_at: string
           reason: string | null
+          restriction_expires_at: string | null
           status: string
           updated_at: string
           user_id: string
@@ -28,6 +29,7 @@ export type Database = {
           changed_by?: string | null
           created_at?: string
           reason?: string | null
+          restriction_expires_at?: string | null
           status?: string
           updated_at?: string
           user_id: string
@@ -37,6 +39,7 @@ export type Database = {
           changed_by?: string | null
           created_at?: string
           reason?: string | null
+          restriction_expires_at?: string | null
           status?: string
           updated_at?: string
           user_id?: string
@@ -471,17 +474,25 @@ export type Database = {
       admin_list_student_profiles: {
         Args: Record<PropertyKey, never>
         Returns: {
+          available_listing_count: number
           bio: string | null
+          completed_purchase_count: number
           created_at: string
           email: string
           first_name: string
           is_banned: boolean
           last_name: string
+          listing_count: number
+          message_count: number
           profile_image: string | null
           program: string | null
+          report_count: number
           reason: string | null
+          restriction_expires_at: string | null
           school: string | null
+          sold_listing_count: number
           status: string
+          transaction_count: number
           updated_at: string
           user_id: string
           warning_count: number
@@ -489,7 +500,12 @@ export type Database = {
         }[]
       }
       admin_set_account_status: {
-        Args: { _reason?: string; _status: string; _user_id: string }
+        Args: {
+          _reason?: string
+          _restriction_expires_at?: string | null
+          _status: string
+          _user_id: string
+        }
         Returns: undefined
       }
       admin_set_listing_flags: {
@@ -501,6 +517,15 @@ export type Database = {
         Returns: number
       }
       has_role: { Args: { _role: string; _user_id: string }; Returns: boolean }
+      marketplace_get_my_account_status: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          reason: string | null
+          restriction_expires_at: string | null
+          status: string
+          warning_count: number
+        }[]
+      }
       marketplace_add_to_cart: {
         Args: { _listing_id: string }
         Returns: string
