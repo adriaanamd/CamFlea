@@ -73,6 +73,25 @@ describe("CamFleaPageShell", () => {
     expect(await screen.findByRole("status", { name: /account restricted/i })).toBeVisible();
   });
 
+  it("blocks a banned user with the modal", async () => {
+    renderPage(
+      vi.fn<() => Promise<ShellData>>().mockResolvedValue({
+        ...shellData,
+        accountStatus: {
+          status: "banned",
+          reason: null,
+          restrictionExpiresAt: null,
+          warningCount: 3,
+        },
+      }),
+      <h1>Browse items</h1>,
+    );
+
+    expect(
+      await screen.findByRole("dialog", { name: /you are banned from camflea/i }),
+    ).toBeVisible();
+  });
+
   it("shows the page even when session hydration fails", async () => {
     const load = vi.fn<() => Promise<ShellData>>().mockRejectedValue(new Error("offline"));
 
