@@ -17,4 +17,8 @@ describe("listing moderation enforcement", () => {
     expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.marketplace_add_to_cart[\s\S]*marketplace_effective_account_status\(auth\.uid\(\)\) <> 'active'/i);
     expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.marketplace_request_purchase[\s\S]*marketplace_effective_account_status\(auth\.uid\(\)\) <> 'active'/i);
   });
+
+  it("guards message sending with effective status", () => {
+    expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.marketplace_send_message[\s\S]*marketplace_effective_account_status\(auth\.uid\(\)\) <> 'active'/i);
+  });
 });

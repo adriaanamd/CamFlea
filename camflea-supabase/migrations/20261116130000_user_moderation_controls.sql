@@ -376,3 +376,61 @@ REVOKE EXECUTE ON FUNCTION public.marketplace_add_to_cart(UUID) FROM PUBLIC, ano
 REVOKE EXECUTE ON FUNCTION public.marketplace_request_purchase(UUID) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.marketplace_add_to_cart(UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.marketplace_request_purchase(UUID) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.marketplace_send_message(
+  _recipient_id UUID,
+  _listing_id UUID,
+  _body TEXT,
+  _attachments TEXT[] DEFAULT ARRAY[]::TEXT[]
+)
+RETURNS UUID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  message_id UUID;
+BEGIN
+  IF auth.uid() IS NULL OR auth.uid() = _recipient_id THEN
+    RAISE EXCEPTION 'This message recipient is not allowed';
+  END IF;
+  IF length(trim(_body)) < 1 OR length(_body) > 2000 THEN
+    RAISE EXCEPTION 'Message body must be between 1 and 2000 characters';
+  END IF;
+  IF cardinality(COALESCE(_attachments, ARRAY[]::TEXT[])) > 5 THEN
+    RAISE EXCEPTION 'You can attach up to five files';
+  END IF;
+  IF public.marketplace_effective_account_status(auth.uid()) <> 'active' THEN
+    RAISE EXCEPTION 'This account cannot send messages';
+  END IF;
+  IF _listing_id IS NOT NULL AND NOT EXISTS (
+    SELECT 1
+    FROM public.marketplace_listings AS listing
+    WHERE listing.id = _listing_id
+      AND (
+        listing.status = 'available'
+        OR listing.seller_id IN (auth.uid(), _recipient_id)
+        OR EXISTS (
+          SELECT 1
+          FROM public.marketplace_transactions AS transaction_row
+          WHERE transaction_row.listing_id = listing.id
+            AND (transaction_row.buyer_id = auth.uid() OR transaction_row.seller_id = auth.uid())
+        )
+      )
+  ) THEN
+    RAISE EXCEPTION 'This listing conversation is not available';
+  END IF;
+
+  INSERT INTO public.marketplace_messages (sender_id, recipient_id, listing_id, body, attachments)
+  VALUES (auth.uid(), _recipient_id, _listing_id, trim(_body), COALESCE(_attachments, ARRAY[]::TEXT[]))
+  RETURNING id INTO message_id;
+
+  INSERT INTO public.marketplace_notifications (recipient_id, sender_id, listing_id, kind, content)
+  VALUES (_recipient_id, auth.uid(), _listing_id, 'new_message', 'You have a new CamFlea message.');
+
+  RETURN message_id;
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.marketplace_send_message(UUID, UUID, TEXT, TEXT[]) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.marketplace_send_message(UUID, UUID, TEXT, TEXT[]) TO authenticated;
