@@ -34,4 +34,8 @@ export function useAccountStatus() {
   return value;
 }
 
+export function useOptionalAccountStatus() {
+  return useContext(AccountStatusContext);
+}
+
 export type { AccountStatus };

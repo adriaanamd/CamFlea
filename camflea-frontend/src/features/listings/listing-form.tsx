@@ -1,4 +1,5 @@
 import { useState, type FormEvent, type ReactNode } from "react";
+import { useOptionalAccountStatus } from "@/components/account-status-context";
 import { LISTING_CATEGORIES, LISTING_CONDITIONS } from "@/lib/domain/listings";
 import { listingInputSchema, type ListingInput } from "@/lib/validation/listing";
 import { MediaUploader } from "./media-uploader";
@@ -54,6 +55,8 @@ export function ListingForm({
   onSave: (value: ListingInput, files: File[]) => void | Promise<void>;
   saving?: boolean;
 }) {
+  const accountStatus = useOptionalAccountStatus();
+  const marketplaceDisabled = accountStatus ? !accountStatus.canUseMarketplace : false;
   const [form, setForm] = useState<ListingInput>({
     title: initial?.title ?? "",
     description: initial?.description ?? "",
@@ -83,6 +86,7 @@ export function ListingForm({
 
   function submit(event: FormEvent) {
     event.preventDefault();
+    if (marketplaceDisabled) return;
     const parsed = listingInputSchema.safeParse(form);
     if (!parsed.success) {
       const next: Record<string, string> = {};
@@ -322,13 +326,15 @@ export function ListingForm({
 
       <div className="sticky bottom-0 z-10 -mx-1 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card/95 p-4 shadow-lg backdrop-blur">
         <p className="text-sm text-muted-foreground">
-          {Object.keys(errors).length
+          {marketplaceDisabled
+            ? "Your account is restricted and cannot post items."
+            : Object.keys(errors).length
             ? "Please fix the highlighted fields."
             : "You can edit or remove your listing later."}
         </p>
         <button
           type="submit"
-          disabled={saving}
+          disabled={saving || marketplaceDisabled}
           className="rounded-full bg-primary px-8 py-3 font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {saving ? "Saving…" : initial ? "Save changes" : "Post item"}
