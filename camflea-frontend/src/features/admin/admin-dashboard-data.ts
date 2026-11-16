@@ -14,6 +14,14 @@ export type AdminUser = {
   status: string;
   reason: string | null;
   warning_count: number;
+  restriction_expires_at: string | null;
+  listing_count: number;
+  available_listing_count: number;
+  sold_listing_count: number;
+  transaction_count: number;
+  completed_purchase_count: number;
+  message_count: number;
+  report_count: number;
   created_at: string;
   updated_at: string;
 };
