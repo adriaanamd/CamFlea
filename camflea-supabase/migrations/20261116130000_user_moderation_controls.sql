@@ -434,3 +434,133 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.marketplace_send_message(UUID, UUID, TEXT, TEXT[]) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.marketplace_send_message(UUID, UUID, TEXT, TEXT[]) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.marketplace_transition_transaction(
+  _transaction_id UUID,
+  _action TEXT,
+  _reason TEXT DEFAULT NULL
+)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  transaction_row public.marketplace_transactions%ROWTYPE;
+BEGIN
+  IF auth.uid() IS NULL OR public.marketplace_effective_account_status(auth.uid()) <> 'active' THEN
+    RAISE EXCEPTION 'This account cannot use marketplace actions';
+  END IF;
+
+  SELECT * INTO transaction_row
+  FROM public.marketplace_transactions
+  WHERE id = _transaction_id
+  FOR UPDATE;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Transaction not found';
+  END IF;
+
+  PERFORM 1
+  FROM public.marketplace_listings
+  WHERE id = transaction_row.listing_id
+  FOR UPDATE;
+
+  IF _action = 'accept' AND auth.uid() = transaction_row.seller_id AND transaction_row.status = 'requested' THEN
+    UPDATE public.marketplace_transactions
+    SET status = 'sent', updated_at = now()
+    WHERE id = transaction_row.id;
+    INSERT INTO public.marketplace_notifications (recipient_id, sender_id, listing_id, kind, content)
+    VALUES (transaction_row.buyer_id, auth.uid(), transaction_row.listing_id, 'purchase_accepted', 'The seller accepted your purchase request.');
+  ELSIF _action = 'received' AND auth.uid() = transaction_row.buyer_id AND transaction_row.status = 'sent' THEN
+    UPDATE public.marketplace_transactions
+    SET status = 'received', updated_at = now()
+    WHERE id = transaction_row.id;
+    INSERT INTO public.marketplace_notifications (recipient_id, sender_id, listing_id, kind, content)
+    VALUES (transaction_row.seller_id, auth.uid(), transaction_row.listing_id, 'item_received', 'The buyer marked the item as received.');
+  ELSIF _action = 'complete' AND auth.uid() = transaction_row.seller_id AND transaction_row.status = 'received' THEN
+    UPDATE public.marketplace_transactions
+    SET status = 'completed', updated_at = now()
+    WHERE id = transaction_row.id;
+    UPDATE public.marketplace_listings
+    SET status = 'sold', updated_at = now()
+    WHERE id = transaction_row.listing_id;
+    INSERT INTO public.marketplace_notifications (recipient_id, sender_id, listing_id, kind, content)
+    VALUES (transaction_row.buyer_id, auth.uid(), transaction_row.listing_id, 'transaction_completed', 'Your transaction is complete.');
+  ELSIF _action = 'cancel' AND auth.uid() IN (transaction_row.buyer_id, transaction_row.seller_id)
+    AND transaction_row.status IN ('cart', 'requested', 'sent', 'received') THEN
+    UPDATE public.marketplace_transactions
+    SET status = 'cancelled', cancellation_reason = NULLIF(trim(_reason), ''), updated_at = now()
+    WHERE id = transaction_row.id;
+    UPDATE public.marketplace_listings
+    SET status = 'available', updated_at = now()
+    WHERE id = transaction_row.listing_id AND status = 'reserved';
+    INSERT INTO public.marketplace_notifications (recipient_id, sender_id, listing_id, kind, content)
+    VALUES (
+      CASE WHEN auth.uid() = transaction_row.buyer_id THEN transaction_row.seller_id ELSE transaction_row.buyer_id END,
+      auth.uid(), transaction_row.listing_id, 'transaction_cancelled',
+      COALESCE(NULLIF(trim(_reason), ''), 'A purchase request was cancelled.')
+    );
+  ELSE
+    RAISE EXCEPTION 'This transaction action is not allowed for your transaction';
+  END IF;
+
+  INSERT INTO public.marketplace_audit_log (actor_id, action, target_type, target_id, reason)
+  VALUES (auth.uid(), _action, 'transaction', transaction_row.id, NULLIF(trim(_reason), ''));
+END;
+$$;
+
+REVOKE EXECUTE ON FUNCTION public.marketplace_transition_transaction(UUID, TEXT, TEXT) FROM PUBLIC, anon;
+GRANT EXECUTE ON FUNCTION public.marketplace_transition_transaction(UUID, TEXT, TEXT) TO authenticated;
+
+DROP POLICY IF EXISTS "Buyers create their own cart entries" ON public.marketplace_transactions;
+CREATE POLICY "Buyers create their own cart entries" ON public.marketplace_transactions
+FOR INSERT TO authenticated
+WITH CHECK (
+  buyer_id = auth.uid()
+  AND buyer_id <> seller_id
+  AND status = 'cart'
+  AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+);
+
+DROP POLICY IF EXISTS "Participants can update transactions" ON public.marketplace_transactions;
+CREATE POLICY "Participants can update transactions" ON public.marketplace_transactions
+FOR UPDATE TO authenticated
+USING (
+  (buyer_id = auth.uid() OR seller_id = auth.uid())
+  AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+)
+WITH CHECK (
+  (buyer_id = auth.uid() OR seller_id = auth.uid())
+  AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+);
+
+DROP POLICY IF EXISTS "Buyers can reserve their requested listings" ON public.marketplace_listings;
+CREATE POLICY "Buyers can reserve their requested listings" ON public.marketplace_listings
+FOR UPDATE TO authenticated
+USING (
+  public.marketplace_effective_account_status(auth.uid()) = 'active'
+  AND EXISTS (
+    SELECT 1
+    FROM public.marketplace_transactions AS transaction_row
+    WHERE transaction_row.listing_id = id
+      AND transaction_row.buyer_id = auth.uid()
+      AND transaction_row.status = 'requested'
+  )
+)
+WITH CHECK (status IN ('available', 'reserved'));
+
+DROP POLICY IF EXISTS "Buyers can reopen their cancelled listings" ON public.marketplace_listings;
+CREATE POLICY "Buyers can reopen their cancelled listings" ON public.marketplace_listings
+FOR UPDATE TO authenticated
+USING (
+  public.marketplace_effective_account_status(auth.uid()) = 'active'
+  AND EXISTS (
+    SELECT 1
+    FROM public.marketplace_transactions AS transaction_row
+    WHERE transaction_row.listing_id = id
+      AND transaction_row.buyer_id = auth.uid()
+      AND transaction_row.status = 'cancelled'
+  )
+)
+WITH CHECK (status IN ('available', 'reserved'));

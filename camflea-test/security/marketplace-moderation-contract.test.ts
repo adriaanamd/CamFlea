@@ -18,6 +18,10 @@ describe("listing moderation enforcement", () => {
     expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.marketplace_request_purchase[\s\S]*marketplace_effective_account_status\(auth\.uid\(\)\) <> 'active'/i);
   });
 
+  it("guards transaction transitions with effective status", () => {
+    expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.marketplace_transition_transaction[\s\S]*marketplace_effective_account_status\(auth\.uid\(\)\) <> 'active'/i);
+  });
+
   it("guards message sending with effective status", () => {
     expect(sql).toMatch(/CREATE OR REPLACE FUNCTION public\.marketplace_send_message[\s\S]*marketplace_effective_account_status\(auth\.uid\(\)\) <> 'active'/i);
   });
