@@ -580,6 +580,7 @@ function ItemManagement({
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [category, setCategory] = useState("all");
+  const [selectedListing, setSelectedListing] = useState<AdminListing | null>(null);
   const categories = [...new Set(listings.map((listing) => listing.category))].sort();
   const visibleListings = listings.filter(
     (listing) =>
@@ -645,6 +646,7 @@ function ItemManagement({
               onAction={onAction}
               setListingFlags={setListingFlags}
               deleteListing={deleteListing}
+              onView={setSelectedListing}
             />
           ))
         ) : (
@@ -660,11 +662,13 @@ function ItemRecord({
   onAction,
   setListingFlags,
   deleteListing,
+  onView,
 }: {
   listing: AdminListing;
   onAction: (action: () => Promise<unknown>) => Promise<void>;
   setListingFlags: SetListingFlags;
   deleteListing: DeleteListing;
+  onView: (listing: AdminListing) => void;
 }) {
   return (
     <Card className="admin-record-card">
@@ -679,6 +683,9 @@ function ItemRecord({
         </small>
       </div>
       <div className="admin-record-actions">
+        <Button type="button" variant="outline" onClick={() => onView(listing)}>
+          View listing
+        </Button>
         <Button
           type="button"
           variant="outline"

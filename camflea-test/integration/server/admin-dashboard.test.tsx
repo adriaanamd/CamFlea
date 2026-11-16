@@ -315,6 +315,23 @@ describe("AdminDashboard", () => {
     expect(await screen.findByRole("heading", { name: heading })).toBeVisible();
   });
 
+  it("opens the selected listing preview without running an admin mutation", async () => {
+    const setListingFlags = vi.fn().mockResolvedValue({ success: true });
+    const deleteListing = vi.fn().mockResolvedValue({ success: true });
+
+    renderItemsDashboard(
+      { listings: [listing] },
+      { setListingFlags, deleteListing },
+    );
+
+    fireEvent.click(await screen.findByRole("button", { name: "View listing" }));
+
+    expect(await screen.findByRole("dialog")).toBeVisible();
+    expect(screen.getByRole("heading", { name: listing.title })).toBeVisible();
+    expect(setListingFlags).not.toHaveBeenCalled();
+    expect(deleteListing).not.toHaveBeenCalled();
+  });
+
   it("requires confirmation before warning a user", async () => {
     const warnUser = vi.fn().mockResolvedValue({ warningCount: 1 });
     render(
