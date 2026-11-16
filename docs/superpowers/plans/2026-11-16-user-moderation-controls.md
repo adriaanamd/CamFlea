@@ -1399,7 +1399,7 @@ Render a compact stats grid in each record using the real `AdminUser` values and
 
 - [ ] **Step 4: Run focused admin UI tests**
 
-Run: `npm --prefix camflea-frontend test -- ../camflea-test/ui/features/admin-user-management.test.tsx ../camflea-frontend/../camflea-test/integration/server/admin-dashboard.test.tsx`
+Run: `npm --prefix camflea-frontend test -- ../camflea-test/ui/features/admin-user-management.test.tsx ../camflea-test/integration/server/admin-dashboard.test.tsx`
 
 Expected: PASS after updating fixtures for the new required fields.
 
