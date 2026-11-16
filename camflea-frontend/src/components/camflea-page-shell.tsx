@@ -2,6 +2,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate } from "@tanstack/react-router";
 
 import { AppShell } from "@/components/app-shell";
+import { AccountStatusProvider } from "@/components/account-status-context";
+import { BannedAccountModal } from "@/components/banned-account-modal";
 import { supabase } from "@/integrations/supabase/client";
 import {
   effectiveAccountStatus,
@@ -141,14 +143,25 @@ export function CamFleaPageShell({
     );
   }
 
+  async function signOutBannedUser() {
+    const { error } = await supabase.auth.signOut();
+    if (!error) await navigate({ to: "/auth", replace: true });
+  }
+
   return (
-    <AppShell
-      user={state.user}
-      unreadCount={state.unreadCount}
-      isStaff={state.isStaff}
-      isAdmin={state.isAdmin}
-    >
-      {children}
-    </AppShell>
+    <AccountStatusProvider value={state.accountStatus}>
+      <AppShell
+        user={state.user}
+        unreadCount={state.unreadCount}
+        isStaff={state.isStaff}
+        isAdmin={state.isAdmin}
+        accountStatus={state.accountStatus}
+      >
+        {children}
+      </AppShell>
+      {state.accountStatus.status === "banned" ? (
+        <BannedAccountModal onSignOut={signOutBannedUser} />
+      ) : null}
+    </AccountStatusProvider>
   );
 }
