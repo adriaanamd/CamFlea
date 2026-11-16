@@ -335,6 +335,12 @@ describe("AdminDashboard", () => {
     expect(within(dialog).getByText(/Meet-up place:/i).parentElement).toHaveTextContent(
       listing.meeting_place,
     );
+    expect(within(dialog).getByText(/Status/i).parentElement).toHaveTextContent("available");
+    expect(within(dialog).queryByRole("button", { name: "Purchase" })).not.toBeInTheDocument();
+    expect(
+      within(dialog).queryByRole("button", { name: "Message seller" }),
+    ).not.toBeInTheDocument();
+    expect(within(dialog).queryByRole("button", { name: "Remove" })).not.toBeInTheDocument();
     expect(setListingFlags).not.toHaveBeenCalled();
     expect(deleteListing).not.toHaveBeenCalled();
   });
