@@ -5,7 +5,7 @@ import {
   adminListingFlagsInputSchema,
   adminUserActionInputSchema,
 } from "@/features/admin/admin-actions";
-import { listAdminWorkspace } from "@/features/admin/admin-actions.server";
+import { listAdminWorkspace, setAccountStatusForAdmin } from "@/features/admin/admin-actions.server";
 
 describe("listAdminWorkspace", () => {
   it("rejects a non-admin before loading admin data", async () => {
@@ -52,5 +52,32 @@ describe("admin action validators", () => {
         isVerified: false,
       }),
     ).not.toThrow();
+  });
+});
+
+describe("setAccountStatusForAdmin", () => {
+  it("forwards a restriction expiration to the account status RPC", async () => {
+    const rpc = vi
+      .fn()
+      .mockResolvedValueOnce({ data: true, error: null })
+      .mockResolvedValueOnce({ data: null, error: null });
+    const client = { rpc };
+    const restrictionExpiresAt = "2099-01-01T00:00:00.000Z";
+
+    await expect(
+      setAccountStatusForAdmin(client as never, "admin-id", {
+        userId: "00000000-0000-0000-0000-000000000001",
+        status: "restricted",
+        reason: "Repeated unsafe listings",
+        restrictionExpiresAt,
+      }),
+    ).resolves.toEqual({ success: true });
+
+    expect(rpc).toHaveBeenNthCalledWith(2, "admin_set_account_status", {
+      _user_id: "00000000-0000-0000-0000-000000000001",
+      _status: "restricted",
+      _reason: "Repeated unsafe listings",
+      _restriction_expires_at: restrictionExpiresAt,
+    });
   });
 });
