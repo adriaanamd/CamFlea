@@ -193,3 +193,85 @@ $$;
 
 REVOKE EXECUTE ON FUNCTION public.admin_list_student_profiles() FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.admin_list_student_profiles() TO authenticated;
+
+DROP POLICY IF EXISTS "Students post their own listings" ON public.marketplace_listings;
+CREATE POLICY "Students post their own listings" ON public.marketplace_listings
+FOR INSERT TO authenticated
+WITH CHECK (
+  seller_id = auth.uid()
+  AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+);
+
+DROP POLICY IF EXISTS "Sellers edit their own listings" ON public.marketplace_listings;
+CREATE POLICY "Sellers edit their own listings" ON public.marketplace_listings
+FOR UPDATE TO authenticated
+USING (
+  seller_id = auth.uid()
+  AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+)
+WITH CHECK (
+  seller_id = auth.uid()
+  AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+);
+
+DROP POLICY IF EXISTS "Sellers remove their own listings" ON public.marketplace_listings;
+CREATE POLICY "Sellers remove their own listings" ON public.marketplace_listings
+FOR DELETE TO authenticated
+USING (
+  seller_id = auth.uid()
+  AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+);
+
+DROP POLICY IF EXISTS "Listing media belongs to the listing owner" ON public.marketplace_listing_media;
+CREATE POLICY "Listing media belongs to the listing owner" ON public.marketplace_listing_media
+FOR ALL TO authenticated
+USING (
+  EXISTS (
+    SELECT 1
+    FROM public.marketplace_listings AS listing
+    WHERE listing.id = listing_id
+      AND listing.seller_id = auth.uid()
+      AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1
+    FROM public.marketplace_listings AS listing
+    WHERE listing.id = listing_id
+      AND listing.seller_id = auth.uid()
+      AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+  )
+);
+
+DROP POLICY IF EXISTS "Students upload photos to their own folder" ON storage.objects;
+CREATE POLICY "Students upload photos to their own folder" ON storage.objects
+FOR INSERT TO authenticated
+WITH CHECK (
+  bucket_id = 'camflea-listings'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+  AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+);
+
+DROP POLICY IF EXISTS "Students replace their own listing photos" ON storage.objects;
+CREATE POLICY "Students replace their own listing photos" ON storage.objects
+FOR UPDATE TO authenticated
+USING (
+  bucket_id = 'camflea-listings'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+  AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+)
+WITH CHECK (
+  bucket_id = 'camflea-listings'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+  AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+);
+
+DROP POLICY IF EXISTS "Students remove their own listing photos" ON storage.objects;
+CREATE POLICY "Students remove their own listing photos" ON storage.objects
+FOR DELETE TO authenticated
+USING (
+  bucket_id = 'camflea-listings'
+  AND (storage.foldername(name))[1] = auth.uid()::text
+  AND public.marketplace_effective_account_status(auth.uid()) = 'active'
+);
