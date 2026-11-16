@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { formatListingPrice } from "@/features/browse/domain";
 import type { AdminListing } from "@/features/admin/admin-dashboard-data";
 
 export function AdminListingPreview({
@@ -26,6 +27,7 @@ export function AdminListingPreview({
             <div className="admin-listing-preview-details">
               <p>{listing.category}</p>
               <p>{listing.condition}</p>
+              <p className="admin-listing-preview-price">{formatListingPrice(listing)}</p>
               <div>
                 <h3>Description</h3>
                 <p>{listing.description}</p>

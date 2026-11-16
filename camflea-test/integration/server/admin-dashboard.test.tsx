@@ -339,6 +339,16 @@ describe("AdminDashboard", () => {
     expect(deleteListing).not.toHaveBeenCalled();
   });
 
+  it("keeps hidden listing prices hidden in the preview", async () => {
+    renderItemsDashboard({ listings: [hiddenPriceListing] });
+
+    fireEvent.click(await screen.findByRole("button", { name: "View listing" }));
+
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toHaveTextContent("Price hidden");
+    expect(dialog).not.toHaveTextContent("500");
+  });
+
   it("requires confirmation before warning a user", async () => {
     const warnUser = vi.fn().mockResolvedValue({ warningCount: 1 });
     render(
