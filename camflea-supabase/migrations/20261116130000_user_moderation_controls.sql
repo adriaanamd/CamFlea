@@ -564,3 +564,5 @@ USING (
   )
 )
 WITH CHECK (status IN ('available', 'reserved'));
+
+COMMIT;
