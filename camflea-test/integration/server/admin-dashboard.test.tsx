@@ -355,6 +355,25 @@ describe("AdminDashboard", () => {
     expect(dialog).not.toHaveTextContent("500");
   });
 
+  it("shows listing photos in the preview gallery", async () => {
+    const photoListing = {
+      ...listing,
+      photos: [
+        "https://cdn.example.test/book-front.png",
+        "https://cdn.example.test/book-back.png",
+      ],
+    } as AdminListing;
+    renderItemsDashboard({ listings: [photoListing] });
+
+    fireEvent.click(await screen.findByRole("button", { name: "View listing" }));
+
+    expect(await screen.findByRole("img", { name: "Calculus book photo 1" })).toHaveAttribute(
+      "src",
+      "https://cdn.example.test/book-front.png",
+    );
+    expect(screen.getByRole("button", { name: "Show photo 2" })).toBeVisible();
+  });
+
   it("requires confirmation before warning a user", async () => {
     const warnUser = vi.fn().mockResolvedValue({ warningCount: 1 });
     render(
