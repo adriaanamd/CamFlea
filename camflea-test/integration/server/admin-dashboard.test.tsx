@@ -430,6 +430,15 @@ describe("AdminDashboard", () => {
     await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
   });
 
+  it("does not embed a separate listing document in the preview", async () => {
+    renderItemsDashboard({ listings: [listing] });
+    fireEvent.click(await screen.findByRole("button", { name: "View listing" }));
+    await screen.findByRole("dialog");
+
+    expect(screen.queryByTitle(/listing/i)).not.toBeInTheDocument();
+    expect(document.querySelector("iframe")).not.toBeInTheDocument();
+  });
+
   it("requires confirmation before warning a user", async () => {
     const warnUser = vi.fn().mockResolvedValue({ warningCount: 1 });
     render(
