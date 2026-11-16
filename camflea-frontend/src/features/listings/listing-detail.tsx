@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, UserRound } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 import { formatListingPrice } from "@/features/browse/domain";
 import { supabase } from "@/integrations/supabase/client";
+import { useOptionalAccountStatus } from "@/components/account-status-context";
 import { StatusPill } from "@/components/status-pill";
 export function ListingDetail({
   listing,
@@ -18,6 +19,7 @@ export function ListingDetail({
   onPurchase?: () => void;
   onReport?: () => void;
 }) {
+  const accountStatus = useOptionalAccountStatus();
   const [selected, setSelected] = useState(0);
   const [photoUrls, setPhotoUrls] = useState<(string | null)[]>([]);
   useEffect(() => {
@@ -40,6 +42,8 @@ export function ListingDetail({
   }, [listing.photos]);
   const selectedUrl = photoUrls[selected] ?? null;
   const available = listing.status === "available";
+  const marketplaceDisabled = accountStatus ? !accountStatus.canUseMarketplace : false;
+  const actionsDisabled = !available || marketplaceDisabled;
   return (
     <div className="listing-detail-page">
       <section aria-label="Listing photos" className="space-y-3">
@@ -124,19 +128,24 @@ export function ListingDetail({
             This item is no longer available, so messaging and purchase are disabled.
           </p>
         )}
+        {marketplaceDisabled && available && (
+          <p role="note" className="rounded-xl bg-muted p-3 text-sm text-muted-foreground">
+            Your account is restricted. You can browse listings, but you cannot message or purchase.
+          </p>
+        )}
         <div className="flex flex-wrap gap-3">
           <button
             type="button"
-            disabled={!available}
-            onClick={onMessage}
+            disabled={actionsDisabled}
+            onClick={marketplaceDisabled ? undefined : onMessage}
             className="rounded-xl bg-primary px-4 py-2 font-semibold text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
           >
             Message seller
           </button>
           <button
             type="button"
-            disabled={!available}
-            onClick={onPurchase}
+            disabled={actionsDisabled}
+            onClick={marketplaceDisabled ? undefined : onPurchase}
             className="rounded-xl border px-4 py-2 font-semibold transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
           >
             Purchase
