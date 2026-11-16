@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
@@ -7,12 +7,23 @@ const migrationPath = path.resolve(
   process.cwd(),
   "../camflea-supabase/migrations/20261113090000_camflea_mvp_hardening.sql",
 );
+const moderationMigrationPath = path.resolve(
+  process.cwd(),
+  "../camflea-supabase/migrations/20261116130000_user_moderation_controls.sql",
+);
 
 function migrationSql() {
   return readFileSync(migrationPath, "utf8");
 }
 
 describe("CamFlea hardening migration", () => {
+  it("includes the user moderation migration in the schema set", () => {
+    expect(existsSync(moderationMigrationPath)).toBe(true);
+    const sql = readFileSync(moderationMigrationPath, "utf8");
+    expect(sql).toMatch(/restriction_expires_at/i);
+    expect(sql).toMatch(/marketplace_effective_account_status/i);
+  });
+
   it("stores private media metadata, transaction snapshots, and audit records", () => {
     const sql = migrationSql();
 
