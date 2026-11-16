@@ -35,4 +35,11 @@ describe("user moderation migration", () => {
     expect(sql).toMatch(/marketplace_add_to_cart/i);
     expect(sql).toMatch(/marketplace_listings/i);
   });
+
+  it("supports duration-aware account status changes", () => {
+    const sql = readMigration();
+    expect(sql).toMatch(/admin_set_account_status\([\s\S]*_restriction_expires_at TIMESTAMPTZ/i);
+    expect(sql).toMatch(/effective_expiration IS NOT NULL[\s\S]*effective_expiration <= now\(\)/i);
+    expect(sql).toMatch(/restriction_expires_at = EXCLUDED\.restriction_expires_at/i);
+  });
 });
