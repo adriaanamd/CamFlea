@@ -23,6 +23,7 @@ import {
   type AdminChartKind,
   type AdminChartLabelKind,
 } from "@/features/admin/admin-analytics-chart";
+import { AdminListingPreview } from "@/features/admin/admin-listing-preview";
 import {
   adminDeleteListing,
   adminSetAccountStatus,
@@ -653,6 +654,10 @@ function ItemManagement({
           <Card className="admin-empty-card">No listings match these filters.</Card>
         )}
       </div>
+      <AdminListingPreview
+        listing={selectedListing}
+        onClose={() => setSelectedListing(null)}
+      />
     </section>
   );
 }
