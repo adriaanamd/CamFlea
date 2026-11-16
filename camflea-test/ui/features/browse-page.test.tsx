@@ -1,9 +1,22 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom/vitest";
+import { QueryClient } from "@tanstack/react-query";
+import { createMemoryHistory, createRouter, RouterContextProvider } from "@tanstack/react-router";
+import type { ReactElement } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { BrowsePage } from "@/features/browse/browse-page";
 import type { BrowsePageData } from "@/features/browse/browse-page";
+import { routeTree } from "@/routeTree.gen";
+
+function renderBrowsePage(element: ReactElement) {
+  const router = createRouter({
+    routeTree,
+    context: { queryClient: new QueryClient() },
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+  });
+  return render(<RouterContextProvider router={router}>{element}</RouterContextProvider>);
+}
 
 const data: BrowsePageData = {
   listings: [
@@ -31,7 +44,7 @@ const data: BrowsePageData = {
 describe("BrowsePage", () => {
   it("loads real listing cards and filters them by search text", async () => {
     const loadListings = vi.fn().mockResolvedValue(data);
-    render(<BrowsePage loadListings={loadListings} />);
+    renderBrowsePage(<BrowsePage loadListings={loadListings} />);
 
     expect(
       await screen.findByRole("link", { name: /Calculus book/i }),

@@ -1,24 +1,25 @@
-import { QueryClient } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
-import { createMemoryHistory, createRouter, RouterContextProvider } from "@tanstack/react-router";
-import { describe, expect, it } from "vitest";
+import type { ReactNode } from "react";
+import { describe, expect, it, vi } from "vitest";
 
 import { AppShell } from "@/components/app-shell";
-import { routeTree } from "@/routeTree.gen";
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({ to, children, ...props }: { to: string; children: ReactNode }) => (
+    <a href={to} {...props}>
+      {children}
+    </a>
+  ),
+  useNavigate: () => vi.fn(),
+  useRouterState: ({ select }: { select: (state: { location: { pathname: string } }) => unknown }) =>
+    select({ location: { pathname: "/" } }),
+}));
 
 function renderShell(isStaff: boolean, isAdmin = false) {
-  const router = createRouter({
-    routeTree,
-    context: { queryClient: new QueryClient() },
-    history: createMemoryHistory({ initialEntries: ["/"] }),
-  });
-
   return render(
-    <RouterContextProvider router={router}>
-      <AppShell user={{ firstName: "Ari" }} unreadCount={2} isStaff={isStaff} isAdmin={isAdmin}>
-        <main>Content</main>
-      </AppShell>
-    </RouterContextProvider>,
+    <AppShell user={{ firstName: "Ari" }} unreadCount={2} isStaff={isStaff} isAdmin={isAdmin}>
+      <main>Content</main>
+    </AppShell>,
   );
 }
 
