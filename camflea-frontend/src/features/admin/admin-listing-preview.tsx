@@ -10,6 +10,7 @@ import {
 import { StatusPill } from "@/components/status-pill";
 import { formatListingPrice } from "@/features/browse/domain";
 import type { AdminListing } from "@/features/admin/admin-dashboard-data";
+import { supabase } from "@/integrations/supabase/client";
 
 export function AdminListingPreview({
   listing,
@@ -19,8 +20,32 @@ export function AdminListingPreview({
   onClose: () => void;
 }) {
   const [selectedPhoto, setSelectedPhoto] = useState(0);
-  useEffect(() => setSelectedPhoto(0), [listing?.id]);
-  const selectedPhotoUrl = listing?.photos[selectedPhoto] ?? null;
+  const [photoUrls, setPhotoUrls] = useState<(string | null)[]>([]);
+  useEffect(() => {
+    let active = true;
+    setSelectedPhoto(0);
+    if (!listing) {
+      setPhotoUrls([]);
+      return () => {
+        active = false;
+      };
+    }
+    void Promise.all(
+      listing.photos.map(async (photo) => {
+        if (/^https?:\/\//i.test(photo)) return photo;
+        const { data } = await supabase.storage
+          .from("camflea-listings")
+          .createSignedUrl(photo, 3600);
+        return data?.signedUrl ?? null;
+      }),
+    ).then((urls) => {
+      if (active) setPhotoUrls(urls);
+    });
+    return () => {
+      active = false;
+    };
+  }, [listing]);
+  const selectedPhotoUrl = photoUrls[selectedPhoto] ?? null;
 
   return (
     <Dialog open={listing !== null} onOpenChange={(open) => !open && onClose()}>
@@ -40,7 +65,9 @@ export function AdminListingPreview({
                     alt={`${listing.title} photo ${selectedPhoto + 1}`}
                   />
                 ) : (
-                  <div className="admin-listing-preview-placeholder">No photos available</div>
+                  <div className="admin-listing-preview-placeholder">
+                    {listing.photos.length > 0 ? "Loading photos…" : "No photos available"}
+                  </div>
                 )}
                 {listing.photos.length > 0 ? (
                   <div className="admin-listing-preview-thumbnails">
@@ -53,7 +80,11 @@ export function AdminListingPreview({
                         aria-pressed={selectedPhoto === index}
                         onClick={() => setSelectedPhoto(index)}
                       >
-                        <img src={photo} alt="" />
+                        {photoUrls[index] ? (
+                          <img src={photoUrls[index] ?? undefined} alt="" />
+                        ) : (
+                          <span aria-hidden="true">Loading</span>
+                        )}
                       </button>
                     ))}
                   </div>

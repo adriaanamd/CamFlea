@@ -11,6 +11,15 @@ import {
   type AdminUser,
 } from "@/features/admin/admin-dashboard-data";
 
+const supabaseMocks = vi.hoisted(() => ({
+  createSignedUrl: vi.fn(),
+  from: vi.fn(),
+}));
+
+vi.mock("@/integrations/supabase/client", () => ({
+  supabase: { storage: { from: supabaseMocks.from } },
+}));
+
 const emptyAnalytics: AdminWorkspaceData["analytics"] = {
   usersByYear: [],
   studentsByProgram: [],
@@ -372,6 +381,24 @@ describe("AdminDashboard", () => {
       "https://cdn.example.test/book-front.png",
     );
     expect(screen.getByRole("button", { name: "Show photo 2" })).toBeVisible();
+  });
+
+  it("resolves storage photo paths through signed URLs", async () => {
+    const photoListing = { ...listing, photos: ["private/book-front.png"] } as AdminListing;
+    supabaseMocks.from.mockReturnValue({ createSignedUrl: supabaseMocks.createSignedUrl });
+    supabaseMocks.createSignedUrl.mockResolvedValue({
+      data: { signedUrl: "https://signed.example.test/book-front.png" },
+      error: null,
+    });
+    renderItemsDashboard({ listings: [photoListing] });
+
+    fireEvent.click(await screen.findByRole("button", { name: "View listing" }));
+
+    expect(await screen.findByRole("img", { name: "Calculus book photo 1" })).toHaveAttribute(
+      "src",
+      "https://signed.example.test/book-front.png",
+    );
+    expect(supabaseMocks.createSignedUrl).toHaveBeenCalledWith("private/book-front.png", 3600);
   });
 
   it("requires confirmation before warning a user", async () => {
