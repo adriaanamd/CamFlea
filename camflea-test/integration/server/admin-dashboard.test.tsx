@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 import { AdminDashboard } from "@/features/admin/admin-dashboard";
@@ -70,6 +71,16 @@ const listing = {
   updated_at: "2026-01-01T00:00:00Z",
 } as AdminListing;
 
+const hiddenPriceListing: AdminListing = {
+  ...listing,
+  id: "44444444-4444-4444-8444-444444444444",
+  title: "Campus jacket",
+  price_type: "hidden",
+  price: null,
+  price_min: null,
+  price_max: null,
+};
+
 const report = {
   id: "33333333-3333-4333-8333-333333333333",
   reporter_id: user.user_id,
@@ -88,6 +99,19 @@ const destructiveWorkspace: AdminWorkspaceData = {
   listings: [listing],
   reports: [report],
 };
+
+function renderItemsDashboard(
+  overrides: Partial<AdminWorkspaceData> = {},
+  props: Partial<ComponentProps<typeof AdminDashboard>> = {},
+) {
+  return render(
+    <AdminDashboard
+      tab="items"
+      loadWorkspace={vi.fn().mockResolvedValue({ ...workspace, ...overrides })}
+      {...props}
+    />
+  );
+}
 
 describe("AdminDashboard", () => {
   it("limits students by program analytics to the five most common programs", () => {
