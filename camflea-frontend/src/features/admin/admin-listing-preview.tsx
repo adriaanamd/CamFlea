@@ -52,7 +52,7 @@ export function AdminListingPreview({
 
   return (
     <Dialog open={listing !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="admin-listing-preview max-w-4xl">
+      <DialogContent aria-modal="true" className="admin-listing-preview max-w-4xl">
         {listing ? (
           <>
             <DialogHeader>

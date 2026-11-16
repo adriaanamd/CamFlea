@@ -337,6 +337,9 @@ describe("AdminDashboard", () => {
 
     const dialog = await screen.findByRole("dialog");
     expect(dialog).toBeVisible();
+    expect(dialog).toHaveAttribute("aria-modal", "true");
+    expect(dialog).toHaveAccessibleName(listing.title);
+    expect(dialog).toHaveAccessibleDescription("Listing preview");
     expect(screen.getByRole("heading", { name: listing.title })).toBeVisible();
     expect(within(dialog).getByText(listing.description)).toBeVisible();
     expect(within(dialog).getByText(listing.category)).toBeVisible();
