@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Make admin dashboard bar charts display their category labels and counts reliably, fix all horizontal bar charts, and apply distinct colors to categorical bars.
+**Goal:** Make admin dashboard bar charts display their category labels reliably, scale geometry to the actual counts, reveal exact counts on hover/focus, fix all horizontal bar charts, and apply distinct colors to categorical bars without permanent numeric overlays.
 
 **Architecture:** Keep `AdminAnalyticsChart` as the chart presentation boundary. Replace the fragile Recharts axis-based `bar` and `column` renderers with small DOM/CSS chart primitives that explicitly render labels, counts, tracks, and deterministic colors. Keep Recharts `donut` and `area` renderers for their tooltip and geometry behavior.
 
@@ -14,7 +14,8 @@
 - Supabase schema, authorization, routes, and the read-only legacy reference app remain unchanged.
 - Preserve CamFlea's green palette, typography, rounded card system, responsive layout, and existing analytics data contract.
 - Do not fabricate data, weaken assertions, skip tests, or disable lint/typecheck/build checks.
-- Keep visible chart labels and exact counts in normal DOM text; keep the existing screen-reader summary as a fallback.
+- Keep category labels in normal visible DOM text and exact counts in the existing screen-reader summary; do not add visible numeric overlays.
+- Provide exact count tooltips on hover and keyboard focus for every DOM-rendered bar.
 
 ---
 
@@ -27,7 +28,7 @@
 **Interfaces:**
 
 - Consumes: the existing `populatedWorkspace` fixture and `AdminDashboard` component.
-- Produces: regression assertions for `.admin-horizontal-bars` and `.admin-column-bars`.
+- Produces: regression assertions for `.admin-horizontal-bars` and `.admin-column-bars`, including proportional fill styles, hover/focus count tooltips, and the absence of permanent count overlays.
 
 - [ ] **Step 1: Add a second item type and report reason to the populated fixture.**
 
@@ -44,7 +45,7 @@ reportsByReason: [
 ],
 ```
 
-- [ ] **Step 2: Assert that horizontal charts expose visible labels, counts, fills, and colors.**
+- [ ] **Step 2: Assert that horizontal charts expose visible labels, proportional fills, and colors without count overlays.**
 
 ```tsx
 const itemTypeChart = screen.getByRole("img", {
@@ -55,14 +56,18 @@ expect(horizontalRows).toHaveLength(2);
 expect(itemTypeChart.querySelector(".admin-horizontal-bar-label")).toHaveTextContent(
   "Books & School Supplies",
 );
-expect(itemTypeChart).toHaveTextContent("2");
+expect(itemTypeChart.querySelector(".admin-horizontal-bar-value")).not.toBeInTheDocument();
+expect(itemTypeChart.querySelector(".admin-chart-bar-interaction")).toHaveAttribute(
+  "aria-label",
+  "Books & School Supplies: 2",
+);
 expect(itemTypeChart.querySelectorAll("[data-chart-color]")).toHaveLength(2);
 expect(horizontalRows[0]?.querySelector(".admin-horizontal-bar-fill")).toHaveStyle({
   width: "100%",
 });
 ```
 
-- [ ] **Step 3: Assert that vertical columns expose visible category and count labels.**
+- [ ] **Step 3: Assert that vertical columns expose visible category labels and proportional fills without count labels.**
 
 ```tsx
 const yearChart = screen.getByRole("img", {
@@ -70,7 +75,11 @@ const yearChart = screen.getByRole("img", {
 });
 expect(yearChart.querySelector(".admin-column-bars")).toBeInTheDocument();
 expect(yearChart.querySelector(".admin-column-bar-label")).toHaveTextContent("1st Year");
-expect(yearChart.querySelector(".admin-column-bar-value")).toHaveTextContent("3");
+expect(yearChart.querySelector(".admin-column-bar-value")).not.toBeInTheDocument();
+expect(yearChart.querySelector(".admin-chart-bar-interaction")).toHaveAttribute(
+  "aria-label",
+  "1st Year: 3",
+);
 ```
 
 - [ ] **Step 4: Run the focused test and confirm the new assertions fail before implementation.**
@@ -94,7 +103,7 @@ Expected: the current suite's old assertions pass, while the new selectors fail 
 **Interfaces:**
 
 - Consumes: `AdminDistribution[]`, formatted labels, and the existing chart-kind contract.
-- Produces: `renderHorizontalBars(values)` and `renderColumnBars(values)`; Recharts remains responsible for `donut` and `area`.
+- Produces: `renderHorizontalBars(values)` and `renderColumnBars(values)`; Recharts remains responsible for `donut` and `area`. Bar/column primitives expose category labels and proportional geometry only; exact counts stay in the hidden summary.
 
 - [ ] **Step 1: Expand the deterministic palette.**
 
@@ -119,13 +128,13 @@ function chartMax(values: AdminDistribution[]) {
 }
 ```
 
-- [ ] **Step 3: Implement horizontal rows with visible labels and counts.**
+- [ ] **Step 3: Implement horizontal rows with visible category labels and proportional widths.**
 
-Each value becomes a `.admin-horizontal-bar-row` containing `.admin-horizontal-bar-label`, `.admin-horizontal-bar-value`, a track, and a fill. Set the fill style to `width: ${value.count / maximum * 100}%` and `--chart-bar-color: chartColor(index)`; add `data-chart-color` for the regression test.
+Each value becomes a `.admin-horizontal-bar-row` containing `.admin-horizontal-bar-label`, a track, and a fill. Set the fill style to `width: ${value.count / maximum * 100}%` and `--chart-bar-color: chartColor(index)`; add `data-chart-color` for the regression test. Wrap the track in a focusable `.admin-chart-bar-interaction` with `aria-label`, `title`, and a styled `.admin-chart-bar-tooltip` containing the exact count. Do not render a permanent visible count element.
 
-- [ ] **Step 4: Implement vertical columns with visible labels and counts.**
+- [ ] **Step 4: Implement vertical columns with proportional heights and visible category labels.**
 
-Each value becomes an `.admin-column-bar-item` containing `.admin-column-bar-value`, a track/fill pair, and `.admin-column-bar-label`. Set the fill style to `height: ${value.count / maximum * 100}%` and the same color custom property.
+Each value becomes an `.admin-column-bar-item` containing a track/fill pair and `.admin-column-bar-label`. Set the fill style to `height: ${value.count / maximum * 100}%` and the same color custom property. Add the same focusable tooltip interaction as horizontal bars, but do not render a permanent visible count element.
 
 - [ ] **Step 5: Route `bar` and `column` kinds outside `ChartContainer`.**
 
@@ -151,7 +160,7 @@ Use this renderer selection so regular HTML is never passed through `ResponsiveC
 npm test -- --run camflea-test/integration/server/admin-dashboard.test.tsx
 ```
 
-Expected: all dashboard tests pass, including visible labels, counts, relative width, and color-hook assertions.
+Expected: all dashboard tests pass, including visible labels, proportional width/height, no numeric overlays, and color-hook assertions.
 
 ---
 
