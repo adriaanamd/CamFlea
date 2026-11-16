@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createElement } from "react";
 import { describe, expect, it, vi } from "vitest";
+import { AccountStatusProvider } from "@/components/account-status-context";
 import { MessageThread } from "@/features/messages/message-thread";
 import { refreshOnMessageEvent } from "@/features/messages/realtime";
 
@@ -51,6 +52,25 @@ describe("message thread", () => {
     expect(
       screen.queryByRole("navigation", { name: "Conversations" }),
     ).not.toBeInTheDocument();
+  });
+
+  it("disables message sending for a restricted account", () => {
+    render(
+      <AccountStatusProvider
+        value={{
+          status: "restricted",
+          reason: null,
+          restrictionExpiresAt: null,
+          warningCount: 1,
+        }}
+      >
+        <MessageThread participantName="Seller" messages={[]} onSend={vi.fn()} />
+      </AccountStatusProvider>,
+    );
+
+    expect(screen.getByLabelText("Message")).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Send" })).toBeDisabled();
+    expect(screen.getByText(/cannot send messages/i)).toBeInTheDocument();
   });
 
   it("uses a Realtime event only to reload authorized messages", () => {
