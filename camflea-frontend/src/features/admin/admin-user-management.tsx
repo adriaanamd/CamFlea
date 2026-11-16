@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { AdminUser } from "@/features/admin/admin-dashboard-data";
+import { RestrictUserAction } from "@/features/admin/restrict-user-action";
 
 type AdminUserAction = (action: () => Promise<unknown>) => Promise<void>;
 type WarnUser = (input: { userId: string; reason?: string }) => Promise<{ warningCount: number }>;
@@ -42,7 +43,7 @@ export function AdminUserManagement({
     const haystack = `${user.first_name} ${user.last_name} ${user.email}`.toLowerCase();
     return (
       (!search.trim() || haystack.includes(search.trim().toLowerCase())) &&
-      (status === "all" || user.status === status) &&
+      (status === "all" || (status === "warned" ? user.warning_count > 0 : user.status === status)) &&
       (school === "all" || user.school === school)
     );
   });
@@ -77,6 +78,7 @@ export function AdminUserManagement({
             <option value="active">Active</option>
             <option value="restricted">Restricted</option>
             <option value="banned">Banned</option>
+            <option value="warned">Warned</option>
           </select>
         </Label>
         <Label>
@@ -170,6 +172,7 @@ function AdminUserRecord({
                   userId: user.user_id,
                   status: nextStatus,
                   reason: `${nextStatus} by administrator`,
+                  restrictionExpiresAt: null,
                 }),
               )
             }
@@ -177,15 +180,15 @@ function AdminUserRecord({
             Restore
           </Button>
         ) : (
-          <ConfirmAction
-            description={`Restrict ${user.first_name} ${user.last_name}? They will lose normal marketplace access until restored.`}
-            confirmLabel="Restrict"
-            onConfirm={() =>
+          <RestrictUserAction
+            userName={`${user.first_name} ${user.last_name}`}
+            onConfirm={({ reason, restrictionExpiresAt }) =>
               onAction(() =>
                 setAccountStatus({
                   userId: user.user_id,
                   status: nextStatus,
-                  reason: `${nextStatus} by administrator`,
+                  reason: reason || `${nextStatus} by administrator`,
+                  restrictionExpiresAt,
                 }),
               )
             }
@@ -193,7 +196,7 @@ function AdminUserRecord({
             <Button type="button" variant="outline">
               Restrict
             </Button>
-          </ConfirmAction>
+          </RestrictUserAction>
         )}
         <ConfirmAction
           description={`Ban ${user.first_name} ${user.last_name}? They will be blocked from CamFlea.`}
@@ -204,6 +207,7 @@ function AdminUserRecord({
                 userId: user.user_id,
                 status: "banned",
                 reason: "Banned by administrator",
+                restrictionExpiresAt: null,
               }),
             )
           }

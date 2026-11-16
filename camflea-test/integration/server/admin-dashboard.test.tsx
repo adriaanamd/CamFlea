@@ -480,10 +480,13 @@ describe("AdminDashboard", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Restrict" }));
 
-    expect(screen.getByRole("alertdialog")).toHaveTextContent("Are you sure?");
+    expect(screen.getByRole("alertdialog")).toHaveTextContent("cannot purchase");
     expect(setAccountStatus).not.toHaveBeenCalled();
     fireEvent.click(
-      screen.getByRole("button", { name: "Restrict", exact: true }),
+      within(screen.getByRole("alertdialog")).getByRole("button", {
+        name: "Restrict",
+        exact: true,
+      }),
     );
     await waitFor(() => expect(setAccountStatus).toHaveBeenCalledTimes(1));
   });
