@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { ArrowLeft, Send } from "lucide-react";
+import { useOptionalAccountStatus } from "@/components/account-status-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Tables } from "@/integrations/supabase/types";
@@ -12,6 +13,7 @@ export function MessageThread({
   onSend,
   onBack,
   currentUserId,
+  disabled,
 }: {
   participantName: string;
   listingTitle?: string | undefined;
@@ -19,7 +21,10 @@ export function MessageThread({
   onSend: (body: string) => Promise<void>;
   onBack?: () => void;
   currentUserId?: string | undefined;
+  disabled?: boolean;
 }) {
+  const accountStatus = useOptionalAccountStatus();
+  const messageDisabled = disabled ?? (accountStatus ? !accountStatus.canUseMarketplace : false);
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     endRef.current?.scrollIntoView?.({ block: "end" });
@@ -31,7 +36,7 @@ export function MessageThread({
   async function submit(event?: FormEvent) {
     event?.preventDefault();
     const content = failedBody || body;
-    if (!content.trim() || busy) return;
+    if (messageDisabled || !content.trim() || busy) return;
     setBusy(true);
     setError("");
     try {
@@ -80,11 +85,17 @@ export function MessageThread({
           onChange={(event) => setBody(event.target.value)}
           maxLength={4000}
           placeholder="Write a message"
+          disabled={messageDisabled || busy}
         />
-        <Button type="submit" aria-label="Send" disabled={busy}>
+        <Button type="submit" aria-label="Send" disabled={messageDisabled || busy}>
           <Send />
         </Button>
       </form>
+      {messageDisabled ? (
+        <p role="status" className="px-3 pb-3 text-sm text-muted-foreground">
+          Your account is restricted and cannot send messages.
+        </p>
+      ) : null}
       {error && (
         <div
           role="alert"
@@ -95,7 +106,7 @@ export function MessageThread({
             type="button"
             variant="outline"
             size="sm"
-            disabled={busy}
+            disabled={busy || messageDisabled}
             onClick={() => void submit()}
           >
             Retry

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useOptionalAccountStatus } from "@/components/account-status-context";
 import { supabase } from "@/integrations/supabase/client";
 import type { Tables } from "@/integrations/supabase/types";
 import { listConversations, listThread, markThreadRead, sendMessage } from "./api";
@@ -7,6 +8,8 @@ import { MessageThread } from "./message-thread";
 import { refreshOnMessageEvent } from "./realtime";
 type Message = Tables<"marketplace_messages">;
 export function MessagePage() {
+  const accountStatus = useOptionalAccountStatus();
+  const messagesDisabled = accountStatus ? !accountStatus.canUseMarketplace : false;
   const [rows, setRows] = useState<Message[]>([]);
   const [profiles, setProfiles] = useState<Record<string, string>>({});
   const [listingTitles, setListingTitles] = useState<Record<string, string>>({});
@@ -94,7 +97,7 @@ export function MessagePage() {
     };
   }, [selected, refreshThread]);
   async function submit(body: string) {
-    if (!selected) return;
+    if (messagesDisabled || !selected) return;
     await sendMessage({
       data: {
         recipientId: selected,
@@ -172,6 +175,7 @@ export function MessagePage() {
               onBack={() => setMobileThread(false)}
               onSend={submit}
               currentUserId={userId}
+              disabled={messagesDisabled}
             />
           </div>
         )}
