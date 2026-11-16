@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { AdminUserManagement } from "@/features/admin/admin-user-management";
@@ -45,5 +45,23 @@ describe("AdminUserManagement", () => {
     expect(screen.getByText("1 completed purchase")).toBeInTheDocument();
     expect(screen.getByText("6 messages sent")).toBeInTheDocument();
     expect(screen.getByText("0 reports received")).toBeInTheDocument();
+  });
+
+  it("filters warned users", () => {
+    render(
+      <AdminUserManagement
+        users={[adminUserFixture, { ...adminUserFixture, user_id: "222", first_name: "Quiet", warning_count: 0 }]}
+        onAction={vi.fn()}
+        warnUser={vi.fn()}
+        setAccountStatus={vi.fn()}
+      />,
+    );
+
+    fireEvent.change(screen.getByRole("combobox", { name: /filter users by status/i }), {
+      target: { value: "warned" },
+    });
+
+    expect(screen.getByText("A Student")).toBeInTheDocument();
+    expect(screen.queryByText("Quiet Student")).not.toBeInTheDocument();
   });
 });
