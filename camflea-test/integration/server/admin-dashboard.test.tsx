@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -326,8 +326,15 @@ describe("AdminDashboard", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "View listing" }));
 
-    expect(await screen.findByRole("dialog")).toBeVisible();
+    const dialog = await screen.findByRole("dialog");
+    expect(dialog).toBeVisible();
     expect(screen.getByRole("heading", { name: listing.title })).toBeVisible();
+    expect(within(dialog).getByText(listing.description)).toBeVisible();
+    expect(within(dialog).getByText(listing.category)).toBeVisible();
+    expect(within(dialog).getByText(listing.condition)).toBeVisible();
+    expect(within(dialog).getByText(/Meet-up place:/i).parentElement).toHaveTextContent(
+      listing.meeting_place,
+    );
     expect(setListingFlags).not.toHaveBeenCalled();
     expect(deleteListing).not.toHaveBeenCalled();
   });

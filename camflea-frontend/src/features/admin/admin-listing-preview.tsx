@@ -18,10 +18,23 @@ export function AdminListingPreview({
     <Dialog open={listing !== null} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="admin-listing-preview max-w-4xl">
         {listing ? (
-          <DialogHeader>
-            <DialogTitle>{listing.title}</DialogTitle>
-            <DialogDescription>Listing preview</DialogDescription>
-          </DialogHeader>
+          <>
+            <DialogHeader>
+              <DialogTitle>{listing.title}</DialogTitle>
+              <DialogDescription>Listing preview</DialogDescription>
+            </DialogHeader>
+            <div className="admin-listing-preview-details">
+              <p>{listing.category}</p>
+              <p>{listing.condition}</p>
+              <div>
+                <h3>Description</h3>
+                <p>{listing.description}</p>
+              </div>
+              <p>
+                <strong>Meet-up place:</strong> {listing.meeting_place}
+              </p>
+            </div>
+          </>
         ) : null}
       </DialogContent>
     </Dialog>
