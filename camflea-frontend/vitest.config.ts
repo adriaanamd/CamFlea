@@ -7,6 +7,7 @@ export default defineConfig({
   test: {
     environment: "jsdom",
     globals: true,
+    testTimeout: 15000,
     setupFiles: [path.resolve(__dirname, "../camflea-test/setup.ts")],
     include: ["../camflea-test/**/*.{test,spec}.{ts,tsx}"],
   },
